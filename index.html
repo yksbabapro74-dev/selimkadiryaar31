@@ -1,0 +1,383 @@
+<!doctype html>
+<!-- Kaynağa baktın. O da böyle yapardı. Konsolu da aç. -->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>selimkadiryaar31 — ayin sitesi</title>
+<meta name="description" content="Çağlar boyu hor görüldü. Selam vermedi. Haklıymış.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#100e0b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23100e0b'/%3E%3Cpath fill='%23ff4f2e' d='M2 4h2v8H2zM5 4h2v8H5zM8 4h2v8H8zM11 4h2v8h-2z'/%3E%3Cpath fill='%23ff4f2e' d='M14 4h1v8h-1z'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/Jacquard12-normal-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<header class="giris" id="giris">
+  <canvas id="sahne" role="img" aria-label="Gece. Taş sütunlardan bir halka. Ortada eski bir monitörün ışığında, kulaklık takmış, kapüşonlu bir figür oturuyor. Sırtı sana dönük. Hep dönük."></canvas>
+  <canvas id="kesit" aria-hidden="true" hidden></canvas>
+
+  <div class="hud hud-ust">
+    <span>ayin sitesi · v31.0.0-kadim</span>
+    <span class="durum" id="durum"><i class="nokta"></i><b id="durum-yazi">çevrimdışı</b><span id="durum-ek"> · son görülme: MÖ 9600</span></span>
+  </div>
+
+  <div class="giris-metin">
+    <h1 class="ad">selimkadiryaar<span class="otuzbir">31</span></h1>
+    <p class="slogan">Çağlar boyu hor görüldü. Selam vermedi. <em>Haklıymış.</em></p>
+    <nav class="menu" aria-label="Bölümler">
+      <a href="#karakter">Ayine gir</a>
+      <a href="#kayitlar">Kayıtlar</a>
+      <a href="#suretler">Suretler</a>
+      <a href="#kulliyat">Külliyat</a>
+      <a href="#emirler">Emirler</a>
+      <a href="#ayin">Ayin</a>
+      <a href="#oyun">Oyun</a>
+      <a href="#mumlar">Mumlar</a>
+    </nav>
+  </div>
+
+  <div class="hud hud-alt">
+    <span id="ipucu">sürükle · yüzünü görmeyi dene</span>
+    <span id="motor">motor: kendi yazdı · webgl yok</span>
+  </div>
+</header>
+
+<main>
+
+<section class="karakter" id="karakter" aria-labelledby="karakter-baslik">
+  <div class="karakter-sahne">
+    <canvas id="portre" role="img" aria-label="Kapüşonlu, gözlüklü bir yüz. Kaşlarının altından sana bakıyor."></canvas>
+    <div class="karakter-yazi">
+      <h2 id="karakter-baslik" class="baslik">Seni çoktan gördü.</h2>
+      <p class="alt-baslik">Cevap yazmayacak.</p>
+
+      <div class="kart">
+        <p class="kart-ust">karakter</p>
+        <dl class="kunye">
+          <div><dt>Ad</dt><dd>selimkadiryaar31</dd></div>
+          <div><dt>Irk</dt><dd>Kadim</dd></div>
+          <div><dt>Sınıf</dt><dd>Bilgisayar Mühendisi</dd></div>
+          <div><dt>Uğraşı</dt><dd>Oyun geliştirme</dd></div>
+          <div><dt>Seviye</dt><dd>31 <small>(beş bitin tavanı)</small></dd></div>
+          <div><dt>İlk kayıt</dt><dd>MÖ 9600</dd></div>
+        </dl>
+        <ul class="nitelik">
+          <li><span>Zekâ</span><i style="--d:31" aria-hidden="true"></i><b>31</b></li>
+          <li><span>Sabır</span><i style="--d:31" aria-hidden="true"></i><b>31</b></li>
+          <li><span>Uptime</span><i style="--d:31" aria-hidden="true"></i><b>31</b></li>
+          <li><span>Sohbet</span><i style="--d:1" aria-hidden="true"></i><b>1</b></li>
+        </ul>
+        <ul class="yetenek">
+          <li><b>Görüldü</b> <small>pasif</small><br>Gelen bütün mesajları okur. Başka bir şey olmaz.</li>
+          <li><b>Kulaklık</b> <small>aktif</small><br>Sosyal hasarı sıfırlar. Bekleme süresi yok.</li>
+          <li><b>Tek Commit</b> <small>nihai</small><br>Grubun bütün projesini gece 04.12'de bitirir. Mesajı: «tamam».</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="dikis" data-ust="murekkep" data-alt="kagit"></div>
+
+<section class="kagit bolum" id="kayitlar" aria-labelledby="kayitlar-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. i</p>
+    <h2 id="kayitlar-baslik" class="baslik">Hor Görülme Kayıtları</h2>
+    <p class="giris-yazi ilk-harf">Hakkında iki tür kaynak var: ondan nefret edenlerin yazdıkları ve kendi commit mesajları. İkincisinin tamamı şöyle: <code>fix</code>. Birincileri bu yıl yeniden çevrildi.</p>
+
+    <ol class="kayit-liste">
+      <li class="kayit">
+        <p class="kayit-kaynak">Kil tablet · Ur · MÖ 2600</p>
+        <p class="kayit-eski">Kapıdan girer, selam vermez. Kâtipler onu kötü bilir.</p>
+        <p class="kayit-yeni">Kulaklığı takılıydı.</p>
+      </li>
+      <li class="kayit">
+        <p class="kayit-kaynak">Antlaşma metni · Hattuşa · MÖ 1259</p>
+        <p class="kayit-eski">Büyük barışa çağrıldı, gelmedi. Bin tanrı şahit tutuldu.</p>
+        <p class="kayit-yeni">Toplantıya «belki» demiş. Bin tanrı da cc'deymiş.</p>
+      </li>
+      <li class="kayit">
+        <p class="kayit-kaynak">Manastır defteri · Bizans · 842</p>
+        <p class="kayit-eski">Hücresinden bütün gece soluk bir ışık sızar. Kapısını çalana açmaz.</p>
+        <p class="kayit-yeni">«Bir şeye bakıp yatacağım» demiş. Yedi yüzyıl sürmüş.</p>
+      </li>
+      <li class="kayit">
+        <p class="kayit-kaynak">Kadı sicili · İstanbul · 1683</p>
+        <p class="kayit-eski">Mahalleli şikâyetçidir: selam almaz, düğüne gelmez, evinden gece gündüz tık tık ses gelir.</p>
+        <p class="kayit-yeni">Mavi switch. Bu maddede mahalle haklı.</p>
+      </li>
+      <li class="kayit">
+        <p class="kayit-kaynak">Ders tutanağı · Mühendislik Fakültesi · yakın geçmiş</p>
+        <p class="kayit-eski">Grup ödevinde tek kelime etmedi. Bizi ciddiye almıyor.</p>
+        <p class="kayit-yeni">Gece 04.12'de projenin tamamını tek commit olarak attı. Mesajı: «tamam». Grup 100 aldı, teşekkür eden olmadı.</p>
+      </li>
+      <li class="kayit">
+        <p class="kayit-kaynak">Forum başlığı · 2009 · kilitli</p>
+        <p class="kayit-eski">Aynı hatayı alan var mı? — selimkadiryaar31: «çözdüm.»</p>
+        <p class="kayit-yeni">Çevrilemedi. Nasıl çözdüğünü hâlâ yazmadı.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="kagit bolum" id="suretler" aria-labelledby="suretler-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. ii</p>
+    <h2 id="suretler-baslik" class="baslik">Suretler</h2>
+    <p class="giris-yazi">Her çağ onu gördüğü gibi çizdi. Hiçbiri düzgün çizemedi. Aşağıdakiler elimizde kalanlardır; yamukluk çağlarındır. Aslını görmek için levhaya dokun.</p>
+
+    <div class="duvar" id="duvar">
+      <figure class="levha">
+        <a href="assets/suret/renkli/fresk.jpg"><img src="assets/suret/fresk.png" width="340" height="456" loading="lazy" alt="Eriyip akmış gibi görünen, gözlüklü bir yüz. Fresk dokusunda."></a>
+        <figcaption><span class="levha-no">Levha I · 11. yy.</span><b>Bizans Freski.</b> Manastır duvarından. Kötü bilindiği için üstü üç kez badanalandı; 2012'de belediye restore etti. Aslına uygun olduğu bildirildi.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/net.jpg"><img src="assets/suret/net.png" width="340" height="269" loading="lazy" alt="Çok bulanık bir vesikalık yüz."></a>
+        <figcaption><span class="levha-no">Levha II · tarih okunamıyor</span><b>En Net Görüntü.</b> Elimizdeki en yüksek çözünürlüklü kayıt budur. Fotoğrafçı, Yeti'yi de çekmiş.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/temas.jpg"><img src="assets/suret/temas.png" width="340" height="349" loading="lazy" alt="Lokantada, ağzı açık, şaşkın bakan gözlüklü bir yüz."></a>
+        <figcaption><span class="levha-no">Levha III · lokanta, öğle</span><b>İlk Temas.</b> Yanına oturulup «abi benim bir oyun fikrim var» dendiği an. Ağzının açık görüldüğü iki kayıttan biridir.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/model.jpg"><img src="assets/suret/model.png" width="340" height="385" loading="lazy" alt="İnce bir sopanın ucunda duran, gülümseyen bir kafa."></a>
+        <figcaption><span class="levha-no">Levha IV · yapım aşaması</span><b>Karakter Modeli, v0.1.</b> Gövde sprint sonuna yetişmedi. Oyunda hâlâ bu haliyle kullanılıyor; aşağıda kendin oynayabilirsin.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/build.jpg"><img src="assets/suret/build.png" width="340" height="502" loading="lazy" alt="Yandan, gözlüklü bir yüz. Eli yüzünün üstünde."></a>
+        <figcaption><span class="levha-no">Levha V · ağıt ikonası</span><b>Build Kırıldı.</b> Üçüncü gece. Derleyici «satır 31'de hata» diyor. Dosya otuz satır.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/el.jpg"><img src="assets/suret/el.png" width="340" height="340" loading="lazy" alt="Beş parmaklı bir elin bileğine oturtulmuş, gülümseyen bir yüz. Arkada bir termos."></a>
+        <figcaption><span class="levha-no">Levha VI · sunak taşı</span><b>Beş Parmak Sureti.</b> Müritlerin selamı buradan gelir: beş parmak, beş bit. Hepsi açıkken el 31'i gösterir. Arkadaki termos adaktır, dokunmayın.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/goruldu.jpg"><img src="assets/suret/goruldu.png" width="340" height="386" loading="lazy" alt="Lokantada, gözlüklü bir yüz. Kameraya boş boş bakıyor."></a>
+        <figcaption><span class="levha-no">Levha VII · geçen salı</span><b>Görüldü.</b> Kendisine «akşam geliyor musun?» diye sorulduktan dokuz saniye sonra. Akşam geçti. Cevap bekleniyor.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/dil.jpg"><img src="assets/suret/dil.png" width="340" height="428" loading="lazy" alt="Sakallı, gözlüklü bir yüz, dili çok uzamış. Tişörtünde BLESSINGS yazıyor."></a>
+        <figcaption><span class="levha-no">Levha VIII · delil</span><b>Dil Kanıtı.</b> Bin yıl dili olmadığı sanıldı. Bu kayıtla tartışma kapandı: dili var. Kullanmıyor.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/gece.jpg"><img src="assets/suret/gece.png" width="340" height="274" loading="lazy" alt="Loş bir mekânda, yamulmuş bir yüz. Tek gözü seçiliyor."></a>
+        <figcaption><span class="levha-no">Levha IX · sosyal etkinlik</span><b>Gece Tezahürü.</b> Zorla götürüldüğü bir mekândan. Kapıyı gözlüyor. Dört dakika sonra «arabada bir şey unuttum» deyip gitti. Arabası yoktu.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/cagri.jpg"><img src="assets/suret/cagri.png" width="340" height="353" loading="lazy" alt="Kulaklıklı, gözlüklü bir yüz. Arkasında havai fişekler patlıyor."></a>
+        <figcaption><span class="levha-no">Levha X · gök olayı</span><b>Büyük Çağrı.</b> Göğün yarıldığı gece bir görüntülü aramaya katıldı. Arkada havai fişekler, önde kapalı bir mikrofon. Kayıtlara göre tek kelime etmedi.</figcaption>
+      </figure>
+      <figure class="levha">
+        <a href="assets/suret/renkli/kampus.jpg"><img src="assets/suret/kampus.png" width="340" height="574" loading="lazy" alt="Kütüphane önünde duran, görüntüsü bükülmüş bir figür."></a>
+        <figcaption><span class="levha-no">Levha XI · mühendislik yılları</span><b>Kampüs Tezahürü.</b> Kütüphane önünde. Mesh'i yüklenirken yakalanmış, LOD geçişi tamamlanmamış. Kameranın suçudur.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<div class="dikis" data-ust="kagit" data-alt="murekkep"></div>
+
+<section class="gece bolum" id="kulliyat" aria-labelledby="kulliyat-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. iii</p>
+    <h2 id="kulliyat-baslik" class="baslik">Külliyat</h2>
+    <p class="giris-yazi">Başlanan oyun: hesaplanamadı. Çıkan oyun: 1.</p>
+
+    <ol class="katalog">
+      <li><time>MÖ 9600</time><h3>Göbeklitepe</h3><p>Bir level. T biçimli sütunlar placeholder'dı, asıl modeller sonra gelecekti. Gelmedi. Projeyi kendi eliyle gömdü.</p><span class="etiket">iptal</span></li>
+      <li><time>MÖ 3100</time><h3>Senet</h3><p>Prototipti. Bir rahip sızdırdı. Firavunlar mezara yanlarında götürdü; hâlâ kayıt dosyası bekliyorlar.</p><span class="etiket">sızdı</span></li>
+      <li class="cikti"><time>MÖ 2600</time><h3>Ur Kraliyet Oyunu</h3><p>Bitirdiği tek oyun. Kılavuz yazmadı. Kuralları 2400 yıl sonra bir Babil kâtibi kendi çabasıyla tablete geçirdi.</p><span class="etiket">çıktı</span></li>
+      <li><time>MÖ 100</time><h3>Antikythera</h3><p>Konsol denemesi. Onlarca dişli, sıfır oyun. Dağıtım için gemiye yüklendi; gemi battı.</p><span class="etiket">deniz dibinde</span></li>
+      <li><time>1206</time><h3>Cezerî'nin Otomatları</h3><p>Kendisinin değil. Cezerî kitabı görüş için gönderdi. Cevap: «olmuş.» Verdiği en uzun kod incelemesidir.</p><span class="etiket">incelendi</span></li>
+      <li><time>1958</time><h3>Tennis for Two</h3><p>Kendisinin değil. Laboratuvarda izledi, çarpışmadaki hatayı gördü.</p><span class="etiket">söylemedi</span></li>
+      <li><time>1983</time><h3>Alamogordo Çölü</h3><p>Beğenmediği bir partiyi gece çöle gömdü. Göbeklitepe'den kalma alışkanlık. Suç E.T.'ye kaldı; savunma yapmadı.</p><span class="etiket">gömüldü</span></li>
+      <li><time>yakın geçmiş</time><h3>Bilgisayar Mühendisliği</h3><p>Diploma gerekiyormuş, gidip okudu. Algoritmadan CC aldı; Hârizmî'nin ödevlerini de o kontrol etmişti. İtiraz etmedi.</p><span class="etiket">mezun</span></li>
+      <li class="suruyor"><time>bugün</time><h3><i>(adı yok)</i></h3><p>Motoru bitince başlayacak. Motor için editör lazım. Editör için arayüz kütüphanesi lazım. Arayüz kütüphanesini yazıyor.</p><span class="etiket">yapımda</span></li>
+    </ol>
+  </div>
+</section>
+
+<div class="dikis" data-ust="murekkep" data-alt="kagit"></div>
+
+<section class="kagit bolum" id="emirler" aria-labelledby="emirler-baslik">
+  <div class="sayfa emir-duzen">
+    <div>
+      <p class="bolum-no">fol. iv</p>
+      <h2 id="emirler-baslik" class="baslik">Emirler</h2>
+      <p class="giris-yazi">Otuz bir emir vardı. Beşi push edildi. Kalanı lokalde.</p>
+      <ol class="emirler">
+        <li>Toplantı olacak şey mesaj olsun. Mesaj olacak şey hiç olmasın.</li>
+        <li>Motorunu kendin yaz. Oyunu sonra yaparsın.</li>
+        <li>Görüldü, cevaptır.</li>
+        <li>«Ne zaman çıkıyor?» diye sorma.</li>
+        <li>Çalışıyorsa dokunma. Neden çalıştığını da sorma; O da bilmiyor.</li>
+      </ol>
+    </div>
+    <aside class="otuzbir-neden" aria-labelledby="neden-baslik">
+      <h3 id="neden-baslik"><span class="rakam">31</span> neden kutsaldır</h3>
+      <dl>
+        <div><dt>11111<sub>2</sub></dt><dd>Beş bite sığan en büyük sayı. Beş parmağa da. Aç elini, say.</dd></div>
+        <div><dt>2<sup>5</sup> − 1</dt><dd>Mersenne asalı. Yalnızca bire ve kendine bölünür; kimseyle ortak böleni yoktur. Tanıdık geliyor.</dd></div>
+        <div><dt>s[0]·31<sup>n−1</sup> + …</dt><dd>Java'da her <code>String</code>'in kimliği böyle hesaplanır. Neden asal bir sayı? <cite>Effective Java</cite>'ya göre faydası belirsiz, «ama gelenektir». Kimin geleneği olduğu yazılmıyor.</dd></div>
+        <div><dt>2<sup>31</sup> − 1</dt><dd>İşaretli 32 bit tam sayının tavanı. Çoğu eski sistemin sayabildiği son sayı. Mumlara bakın.</dd></div>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<div class="dikis" data-ust="kagit" data-alt="murekkep"></div>
+
+<section class="gece bolum" id="ayin" aria-labelledby="ayin-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. v</p>
+    <h2 id="ayin-baslik" class="baslik">Ayin</h2>
+    <p class="giris-yazi">Üç adımdır. Zorunlu değildir. O fark etmeyecektir.</p>
+
+    <div class="adimlar">
+      <article class="adim" id="adim-el">
+        <p class="adim-no">adım 1 <span class="tamam" hidden>tamam</span></p>
+        <h3>Elini aç.</h3>
+        <p>Beş parmak, beş bit. Hepsi açıkken el 31'i gösterir. Müritler selamı böyle verir. Karşılık beklenmez. Parmaklara dokun.</p>
+        <div class="el" id="el" role="group" aria-label="Beş parmak. Her biri bir bit.">
+          <button type="button" class="parmak p16" data-d="16" aria-pressed="false" aria-label="Serçe parmak, 16"></button>
+          <button type="button" class="parmak p8" data-d="8" aria-pressed="false" aria-label="Yüzük parmağı, 8"></button>
+          <button type="button" class="parmak p4" data-d="4" aria-pressed="false" aria-label="Orta parmak, 4"></button>
+          <button type="button" class="parmak p2" data-d="2" aria-pressed="false" aria-label="İşaret parmağı, 2"></button>
+          <button type="button" class="parmak p1" data-d="1" aria-pressed="false" aria-label="Başparmak, 1"></button>
+          <div class="avuc" aria-hidden="true"></div>
+        </div>
+        <p class="okuma" id="el-okuma" aria-live="polite"><b>00000<sub>2</sub> = 0</b><br>Yumruk. Daha başlamadık.</p>
+      </article>
+
+      <article class="adim" id="adim-ad">
+        <p class="adim-no">adım 2 <span class="tamam" hidden>tamam</span></p>
+        <h3>Adını hash'le.</h3>
+        <p>Kayıtlara adınla değil, O'nun sayısıyla geçersin.</p>
+        <form id="ad-form" autocomplete="off">
+          <label for="ad-girdi">Adın</label>
+          <input id="ad-girdi" type="text" maxlength="40" placeholder="adını yaz" spellcheck="false">
+        </form>
+        <p class="formul">h = 31·h + harf <small>// 32 bit, taşarsa taşar</small></p>
+        <p class="okuma" id="ad-okuma" aria-live="polite">Mürit numarası: <b>henüz yok</b></p>
+        <p class="onun-no"><code>"selimkadiryaar31".hashCode()</code><br>= <span id="onun-hash">−</span> <small>(O hep eksidedir.)</small></p>
+      </article>
+
+      <article class="adim adim-genis" id="adim-soru">
+        <p class="adim-no">adım 3 <span class="tamam" hidden>tamam</span></p>
+        <h3>Sor.</h3>
+        <p>Bir soru sor. Cevap ihtimali 1/31.</p>
+        <div class="sohbet">
+          <div class="sohbet-ust">
+            <img src="assets/suret/avatar.png" width="44" height="44" alt="">
+            <div><b>selimkadiryaar31</b><br><small id="sohbet-durum">son görülme: MÖ 9600</small></div>
+          </div>
+          <ol class="sohbet-akis" id="sohbet-akis" aria-live="polite"></ol>
+          <form class="sohbet-yaz" id="sohbet-form" autocomplete="off">
+            <label class="gizli" for="sohbet-girdi">Sorun</label>
+            <input id="sohbet-girdi" type="text" maxlength="120" placeholder="abi bir şey soracaktım" spellcheck="false">
+            <button type="submit">gönder</button>
+          </form>
+        </div>
+      </article>
+    </div>
+
+    <div class="icazet" id="icazet" hidden>
+      <canvas id="icazet-tuval" width="720" height="960" role="img" aria-label="Mürit belgesi"></canvas>
+      <div>
+        <h3>İcazetname</h3>
+        <p>Ayin tamamlandı. Kimse bir şey demedi. Belgen hazır.</p>
+        <button type="button" class="dugme" id="icazet-indir">Belgeyi indir</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="gece bolum" id="oyun" aria-labelledby="oyun-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. vi · külliyatta olmayan tek çalışan yapı</p>
+    <h2 id="oyun-baslik" class="baslik">Selam Verme</h2>
+    <p class="giris-yazi">Çağlar seni bulacak. 31 saniye kimseyle konuşma.</p>
+
+    <div class="oyun-kasa" id="oyun-kasa">
+      <canvas id="oyun-tuval" width="960" height="540" tabindex="0" aria-label="Selam Verme oyunu. Yön tuşlarıyla kaç, boşluk tuşuyla kulaklığı tak."></canvas>
+      <div class="perde" id="perde">
+        <img id="perde-resim" src="assets/suret/model.png" alt="">
+        <div class="perde-yazi">
+          <p class="perde-baslik" id="perde-baslik">Selam Verme</p>
+          <p id="perde-metin">Oynadığın karakter: model v0.1. Gövdesi yok.</p>
+          <button type="button" class="dugme" id="oyun-basla">Başla</button>
+          <p class="perde-not" id="perde-not">yön tuşları veya WASD · boşluk: kulaklık<br>dokunmatikte: sürükle</p>
+        </div>
+      </div>
+    </div>
+    <div class="oyun-alt">
+      <button type="button" class="dugme" id="oyun-kulaklik">Kulaklık</button>
+      <p id="oyun-rekor">rekor: yok</p>
+    </div>
+  </div>
+</section>
+
+<section class="gece bolum mumlar" id="mumlar" aria-labelledby="mumlar-baslik">
+  <div class="sayfa">
+    <p class="bolum-no">fol. vii</p>
+    <h2 id="mumlar-baslik" class="baslik">Otuz Bir Mum</h2>
+    <p class="giris-yazi">Mumlar sunağın saatidir. Her mum Unix zamanının bir bitidir; şu an yananlar bu saniyeyi yazıyor. En soldaki 10 Ocak 2004'te yandı, bir daha sönmedi. En sağdaki saniyede bir el değiştirir.</p>
+
+    <div class="sunak" id="sunak" role="img" aria-label="Otuz bir mum. Yananlar şu anki Unix zamanını ikilik düzende gösteriyor."></div>
+    <p class="sunak-okuma"><span id="unix">−</span> <small>saniye · yanan mum: <span id="yanan">−</span>/31</small></p>
+
+    <div class="kehanet">
+      <p>Bütün mumlar aynı anda yalnızca bir kez yanacak: <b>19 Ocak 2038, 03.14.07 UTC</b>. Bir saniye sonra sayaç taşacak ve 32 bit saatler kendini 13 Aralık 1901 sanacak. Müritler buna Büyük Taşma der.</p>
+      <p class="sayac" aria-live="off"><span id="sayac">−</span></p>
+      <p>O, o gün de cevap yazmayacak. Ama kendi sistemleri 64 bit olacak.</p>
+    </div>
+  </div>
+</section>
+
+<div class="dikis" data-ust="murekkep" data-alt="kagit"></div>
+
+<section class="kagit bolum bugun" id="bugun" aria-label="Bugün">
+  <div class="sayfa bugun-duzen">
+    <div class="vaaz">
+      <p class="bolum-no">fol. viii · son</p>
+      <p class="vaaz-soru">Her çağ ona aynı şeyi sordu: <em>Neden konuşmuyorsun?</em></p>
+      <p class="vaaz-soru">Hiçbir çağ şunu sormadı: <em>Ne yapıyorsun?</em></p>
+      <p>Uçurumun kenarından çıktıktan sonra bile zıplayabilesin diye sana gizlice verdiği o yüz milisaniyeyi yapıyordu. Canın son çentikteyken sayıları senin lehine eğiyordu. Düşman ıskalasın diye vuruş kutusunu bir piksel daraltıyordu. Sana söylemedi. Söylese bozulurdu.</p>
+      <p class="vaaz-son">Konuşmayan biri değilmiş.<br>Başka türlü konuşuyormuş.</p>
+      <p class="ozur">Hor gördük. Özür dileriz.<br>Cevap beklemiyoruz.</p>
+    </div>
+    <figure class="bugun-resim">
+      <img src="assets/suret/bugun.jpg" width="867" height="1000" loading="lazy" alt="Sınıfta, siyah kapüşonlu giymiş, hafifçe gülümseyen genç bir adam. Fotoğraf net ve yamuk değil.">
+      <figcaption><span class="levha-no">Levha XII · bugün</span><b>Restore edilmedi.</b> Aslı budur.</figcaption>
+    </figure>
+  </div>
+</section>
+
+</main>
+
+<footer class="son">
+  <p>Bu site O'nun izniyle yapılmadı. Sorduk. Görüldü.</p>
+  <p class="son-kucuk">Burada O'nun hakkında yazılan her şey uydurmadır. 31 sayısı hakkında yazılanlar doğrudur.</p>
+</footer>
+
+<dialog id="asli" aria-label="Levhanın aslı">
+  <img id="asli-resim" alt="">
+  <div class="asli-alt">
+    <p id="asli-yazi"></p>
+    <div class="asli-dugmeler">
+      <button type="button" class="dugme" id="asli-onceki" aria-label="Önceki levha">‹</button>
+      <button type="button" class="dugme" id="asli-sonraki" aria-label="Sonraki levha">›</button>
+      <button type="button" class="dugme" id="asli-kapat">Kapat</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="js/portre-veri.js"></script>
+<script src="js/ortak.js"></script>
+<script src="js/sahne.js"></script>
+<script src="js/site.js"></script>
+<script src="js/oyun.js"></script>
+</body>
+</html>

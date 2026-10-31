@@ -326,7 +326,15 @@ document.documentElement.classList.add('js');
     const ilk = kutu.hidden;
     kutu.hidden = false;
     icazetCiz();
-    if (ilk) kutu.scrollIntoView({ behavior: azalt ? 'auto' : 'smooth', block: 'center' });
+    if (ilk) {
+      // Sohbetin ortasında sayfayı oynatma: haberi sohbete düş.
+      const li = document.createElement('li');
+      li.className = 'sistem';
+      li.textContent = 'Ayin tamamlandı. Belgen aşağıda. Sormaya devam edebilirsin.';
+      const akis = $('#sohbet-akis');
+      akis.appendChild(li);
+      akis.scrollTop = akis.scrollHeight;
+    }
   }
   function satirla(c, metin, en) {
     const satirlar = [];
@@ -364,12 +372,12 @@ document.documentElement.classList.add('js');
     c.fillText('selimkadiryaar31 müritleri · kayıt defteri', G / 2, 158);
 
     const resim = await window.Ortak.portreResmi();
-    const pg = 150, py = 230, nokta = 2;
+    const pg = 240, py = 230, nokta = 2;
     const off = document.createElement('canvas');
     off.width = pg; off.height = py;
     const oc = off.getContext('2d');
     const v = oc.createImageData(pg, py);
-    window.Ortak.atkinson(window.Ortak.griOrnekle(resim, pg, py), pg, py, null, new Uint32Array(v.data.buffer), RENK.kagit, RENK.murekkep);
+    window.Ortak.atkinson(window.Ortak.griOrnekle(resim, pg, py, [0.02, 0.33, 0.96, 0.62]), pg, py, null, new Uint32Array(v.data.buffer), RENK.kagit, RENK.murekkep);
     oc.putImageData(v, 0, 0);
     c.imageSmoothingEnabled = false;
     c.drawImage(off, (G - pg * nokta) / 2, 186, pg * nokta, py * nokta);

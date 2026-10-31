@@ -2,7 +2,7 @@
 """images/ klasöründeki fotoğraflardan sitenin kullandığı suretleri üretir.
 
 Çıktılar:
-  assets/suret/<ad>.png         1 bit Atkinson dither (mürekkep + kâğıt)
+  assets/suret/<ad>.png         1 bit Atkinson dither (mürekkep + kemik)
   assets/suret/renkli/<ad>.jpg  levhaya tıklayınca açılan aslı
   assets/suret/bugun.jpg        son bölümün tek renkli fotoğrafı
   assets/suret/avatar.png       kehanet sohbetinin küçük resmi
@@ -22,8 +22,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 KOK = Path(__file__).resolve().parent.parent
 GIRDI = KOK / "images"
 CIKTI = KOK / "assets" / "suret"
-MUREKKEP = (16, 14, 11)
-KAGIT = (232, 224, 203)
+MUREKKEP = (10, 8, 7)
+KAGIT = (217, 208, 186)
 
 
 def yol(zaman):

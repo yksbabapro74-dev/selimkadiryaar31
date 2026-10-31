@@ -1,17 +1,22 @@
 // Giriş sahnesi: elle yazılmış yazılımsal rasterizer. WebGL yok, kütüphane yok.
-// Taş halka, sunak, CRT ve kapüşonlu figür. Figür her zaman sırtını kameraya döner.
+// Tutulmuş ay, taş halka, yerde kızıl daire, sunak, CRT ve kapüşonlu figür.
+// Figür her zaman sırtını kameraya döner. Çevresindekilerin hepsi sana bakar.
 (function () {
   'use strict';
   const tuval = document.getElementById('sahne');
   if (!tuval) return;
   const ctx = tuval.getContext('2d', { alpha: false });
   const giris = document.getElementById('giris');
-  const { azalt, RENK, BAYER } = window.Ortak;
-  const MUREKKEP = RENK.murekkep, KAGIT = RENK.kagit, KOR = RENK.kor, KOR_KOYU = 0xff0c1540;
+  const { azalt, RENK, BAYER, kayit, dinle, javaHash } = window.Ortak;
+  const Ses = window.Ses;
+  const kok = document.documentElement;
+  const MUREKKEP = RENK.murekkep, KAGIT = RENK.kagit, KOR = RENK.kor, KAN = RENK.kan, KOR_KOYU = 0xff060a24;
 
   // Bu değerin altı tam siyah: gölgelerde düzenli nokta ızgarası oluşmasın.
-  const TABAN = 0.06;
-  const M_ZEMIN = 1, M_TAS = 2, M_KUMAS = 3, M_EKRAN = 4, M_DUZ = 5;
+  const TABAN = 0.05;
+  // Bu değerin üstü kemik, altı kan: taş ışıktan uzaklaştıkça kızıla batar.
+  const KEMIK_ESIK = 0.46;
+  const M_ZEMIN = 1, M_TAS = 2, M_KUMAS = 3, M_EKRAN = 4, M_DUZ = 5, M_HALKA = 6, M_SILUET = 7;
 
   // Kararlı rastgele: sahne her açılışta aynı olsun.
   let tohum = 31;
@@ -141,6 +146,8 @@
     .map(([r, y]) => [r * FS, y * FS]);
   torna(gurup, 0, FZ, figProfil, 12, 0.5, M_KUMAS);
   // Kulaklık: kapüşonun sırtından geçen yay ve iki kap. Arkadan bakınca seçilsin.
+  // Yüzünü döndüğünde çizilmez; buradan sonraki üçgenler kulaklıktır.
+  const KULAK_BAS = gurup.a.length;
   const KY = 1.04 * FS, KR = 0.2, KZ = FZ + 0.262;
   for (let i = 0; i < 9; i++) {
     const a0 = Math.PI * (i / 9), a1 = Math.PI * ((i + 1) / 9);
@@ -170,7 +177,7 @@
 
   // Yıldızlar: üst yarımküre
   const YILDIZ = [];
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 80; i++) {
     const az = rast() * Math.PI * 2, ey = 0.02 + Math.pow(rast(), 0.8) * 1.3;
     YILDIZ.push(Math.cos(ey) * Math.sin(az), Math.sin(ey), Math.cos(ey) * Math.cos(az), rast());
   }
@@ -180,6 +187,53 @@
   })();
   const AY_ISIK = (function () { const x = -0.45, y = 0.8, z = 0.4, u = Math.hypot(x, y, z); return [x / u, y / u, z / u]; })();
 
+  // ---------- yerdeki halka: 31 kol, kolların arasında 5 bitlik yazı ----------
+  const HALKA_A = 2.32, HALKA_B = 2.98, HALKA_K = 0.034;
+  const HALKA_IC2 = (HALKA_A - HALKA_K) ** 2, HALKA_DIS2 = (HALKA_B + HALKA_K) ** 2;
+  const YAZI = new Uint8Array(31);
+  (function () {
+    let s = javaHash('selimkadiryaar31');
+    for (let i = 0; i < 31; i++) {
+      s = (Math.imul(s, 31) + i) | 0;
+      YAZI[i] = (s >>> 11) & 31;
+    }
+  })();
+  function halkaMi(x, z, r2) {
+    const r = Math.sqrt(r2);
+    if (r < HALKA_A + HALKA_K || r > HALKA_B - HALKA_K) return true;
+    const aci = (Math.atan2(x, z) / (Math.PI * 2) + 0.5) * 31;
+    const dilim = Math.floor(aci) % 31, fr = aci - Math.floor(aci);
+    if (fr < 0.04) return true;
+    if (fr < 0.3 || fr > 0.74) return false;
+    const seviye = Math.floor(((r - HALKA_A) / (HALKA_B - HALKA_A)) * 7) - 1;
+    return seviye >= 0 && seviye < 5 && ((YAZI[dilim] >> seviye) & 1) === 1;
+  }
+
+  // Dairenin içinde dokuz mum. Işık vermezler, yalnızca parlarlar.
+  const MUMLAR = [];
+  for (let i = 0; i < 9; i++) {
+    const a = ((i + 0.5) / 9) * Math.PI * 2;
+    MUMLAR.push([Math.sin(a) * 1.92, Math.cos(a) * 1.92, 0.15 + rast() * 0.13, rast() * 40]);
+  }
+
+  // ---------- müritler: ekrana dönük silüetler ----------
+  const BOY = 1.72;
+  const YARI = new Float32Array(32);
+  (function () {
+    const P = [[0, 0.03], [0.05, 0.1], [0.1, 0.145], [0.16, 0.16], [0.22, 0.13], [0.28, 0.2], [0.45, 0.28], [0.7, 0.36], [1, 0.46]];
+    for (let i = 0; i < 32; i++) {
+      const u = i / 31;
+      let k = 0;
+      while (k < P.length - 2 && P[k + 1][0] < u) k++;
+      const o = (u - P[k][0]) / (P[k + 1][0] - P[k][0]);
+      YARI[i] = P[k][1] + (P[k + 1][1] - P[k][1]) * o;
+    }
+  })();
+  const muritler = [];
+  function muritEkle(a, r, sabit) {
+    muritler.push({ a, r, sabit: !!sabit, tohum: rast() * 100, gx: 0, gy: 0, gs: 0, iz: 0 });
+  }
+
   // ---------- kamera + tamponlar ----------
   let W = 0, H = 0, pikselBoy = 3, img, cikis, zb, br, mt, gl, sh, vig, kareNo = 0;
   let f = 400, ox = 0, oy = 0;
@@ -188,6 +242,8 @@
   let Lx = 0, Ly = 0, Lz = 0, Isik = 3;
   let grupC = 1, grupS = 0;
   let ekSx = 0, ekSy = 0, ekSz = 0, ekUx = 1, ekUz = 0, kaydir = 0, imlec = 0;
+  // parla: eşikten sonra sahne karanlıktan yavaşça çıkar.
+  let parla = azalt ? 1 : 0, yuzDonuk = kayit.cevap === 'verdi';
 
   function boyutla() {
     const cssG = giris.clientWidth, cssY = giris.clientHeight;
@@ -346,9 +402,13 @@
               let d = ayTerim + ek;
               if (nl > 0) d += ((nl / Math.sqrt(d2)) * I) / (1 + 0.115 * d2);
               d *= alb;
-              if (mat === M_ZEMIN) d *= GUR[((((wz * 7) | 0) & 255) << 8) | (((wx * 7) | 0) & 255)] / (1 + 0.09 * d2);
+              if (mat === M_ZEMIN) {
+                d *= GUR[((((wz * 7) | 0) & 255) << 8) | (((wx * 7) | 0) & 255)] / (1 + 0.09 * d2);
+                const r2 = wx * wx + wz * wz;
+                if (r2 > HALKA_IC2 && r2 < HALKA_DIS2 && halkaMi(wx, wz, r2)) mt[i] = M_HALKA;
+              }
               else if (mat === M_TAS) d *= GUR[((((wy * 11 + wx * 5) | 0) & 255) << 8) | (((wz * 11 + wx * 3) | 0) & 255)];
-              br[i] = d / (1 + z * z * 0.0034);
+              br[i] = d / (1 + z * z * 0.021);
             }
           }
         }
@@ -391,8 +451,12 @@
 
     grupC = Math.cos(grupAz);
     grupS = Math.sin(grupAz);
-    const titreme = azalt ? 1 : 1 + 0.05 * Math.sin(t * 13.1) * Math.sin(t * 7.3) + 0.03 * Math.sin(t * 29.7);
-    Isik = 3.1 * titreme;
+    // Monitörün voltajı arada düşer: en çok 7,3 saniyede bir, 0,22 saniye.
+    const dilim = Math.floor(t / 7.3);
+    const zar = (Math.sin(dilim * 91.7) * 43758.5453) % 1;
+    const dusuk = Math.abs(zar) < 0.55 && t - dilim * 7.3 < 0.22 ? 0.22 : 1;
+    const titreme = azalt ? 1 : (1 + 0.07 * Math.sin(t * 13.1) * Math.sin(t * 7.3) + 0.04 * Math.sin(t * 29.7)) * dusuk;
+    Isik = 3.4 * titreme;
     const lz = -0.2, ly = 1.3;
     Lx = lz * grupS; Ly = ly; Lz = lz * grupC;
     ekSx = EKRAN_M[2] * grupS; ekSy = EKRAN_M[1]; ekSz = EKRAN_M[2] * grupC;
@@ -401,19 +465,145 @@
     imlec = t;
   }
 
+  // Dünya noktasını ekrana düşürür: [x, y, 1/z, ölçek]
+  function yansit(x, y, z) {
+    const dx = x - cam[0], dy = y - cam[1], dz = z - cam[2];
+    const zc = dx * F[0] + dy * F[1] + dz * F[2];
+    if (zc < YAKIN) return null;
+    const s = f / zc;
+    return [ox + (dx * R[0] + dy * R[1] + dz * R[2]) * s, oy - (dx * U[0] + dy * U[1] + dz * U[2]) * s, 1 / zc, s];
+  }
+
+  function muritCiz() {
+    const Fx = F[0], Fy = F[1], Fz = F[2], Rx = R[0], Rz = R[2], Ux = U[0], Uy = U[1], Uz = U[2];
+    for (let n = 0; n < muritler.length; n++) {
+      const m = muritler[n];
+      m.gs = 0;
+      const dx = Math.sin(m.a) * m.r - cam[0], dy = -cam[1], dz = Math.cos(m.a) * m.r - cam[2];
+      const zA = dx * Fx + dy * Fy + dz * Fz, zU = zA + BOY * Fy;
+      // Kameranın içinden geçen çizilmez.
+      if (zA < 0.62 || zU < 0.62) continue;
+      const xc = dx * Rx + dz * Rz;
+      const yA = dx * Ux + dy * Uy + dz * Uz, yU = yA + BOY * Uy;
+      const sA = f / zA, sU = f / zU;
+      const xA = ox + xc * sA, ayak = oy - yA * sA, xU = ox + xc * sU, tepe = oy - yU * sU;
+      const boy = ayak - tepe;
+      if (boy < 1) continue;
+      const y0 = Math.max(0, Math.ceil(tepe)), y1 = Math.min(H - 1, Math.floor(ayak));
+      for (let y = y0; y <= y1; y++) {
+        const u = (y - tepe) / boy;
+        const hw = YARI[(u * 31) | 0] * (sU + (sA - sU) * u);
+        const cx = xU + (xA - xU) * u;
+        const iz = 1 / (zU + (zA - zU) * u);
+        const x0 = Math.max(0, Math.ceil(cx - hw)), x1 = Math.min(W - 1, Math.floor(cx + hw));
+        for (let x = x0, i = y * W + x0; x <= x1; x++, i++) {
+          if (iz > zb[i]) {
+            zb[i] = iz;
+            mt[i] = M_SILUET;
+          }
+        }
+      }
+      m.gs = sU;
+      m.gx = xU + (xA - xU) * 0.085;
+      m.gy = tepe + boy * 0.085;
+      m.iz = 1 / (zU + (zA - zU) * 0.085);
+    }
+  }
+
+  function gozNokta(x, y, g, yuk, renk, iz) {
+    const x0 = Math.round(x - g / 2), y0 = Math.round(y - yuk / 2);
+    for (let j = 0; j < yuk; j++) {
+      const yy = y0 + j;
+      if (yy < 0 || yy >= H) continue;
+      for (let i = 0; i < g; i++) {
+        const xx = x0 + i;
+        if (xx < 0 || xx >= W) continue;
+        const k = yy * W + xx;
+        if (zb[k] > iz * 1.004) continue;
+        cikis[k] = renk;
+      }
+    }
+  }
+
+  function muritGozleri(t) {
+    if (parla < 0.5) return;
+    for (let n = 0; n < muritler.length; n++) {
+      const m = muritler[n];
+      if (!m.gs) continue;
+      if (!azalt && Math.sin(t * 0.63 + m.tohum) * Math.sin(t * 0.37 + m.tohum * 2) > 0.9) continue;
+      const ara = m.gs * 0.052;
+      const g = Math.max(1, (m.gs * 0.046) | 0), yuk = Math.max(1, (m.gs * 0.02) | 0);
+      gozNokta(m.gx - ara, m.gy, g, yuk, KOR, m.iz);
+      gozNokta(m.gx + ara, m.gy, g, yuk, KOR, m.iz);
+    }
+  }
+
+  function mumCiz(t) {
+    for (let n = 0; n < MUMLAR.length; n++) {
+      const [x, z, boy, tohum] = MUMLAR[n];
+      const A = yansit(x, 0, z), U2 = yansit(x, boy, z);
+      if (!A || !U2) continue;
+      const bx = Math.round(A[0]), by = Math.round(A[1]), ty = Math.round(U2[1]);
+      const k0 = ty * W + bx;
+      if (bx < 1 || bx >= W - 1 || ty < 3 || by >= H || zb[k0] > U2[2] * 1.01) continue;
+      const ol = vig[k0] * parla;
+      if (ol < 0.12) continue;
+      const kalin = Math.max(1, Math.round(U2[3] * 0.024));
+      for (let y = Math.max(0, ty); y <= by; y++) {
+        for (let i = 0; i < kalin; i++) {
+          const k = y * W + bx + i;
+          if (mt[k] === M_KUMAS || mt[k] === M_SILUET) continue;
+          cikis[k] = KAGIT;
+        }
+      }
+      const tit = azalt ? 1 : 0.8 + 0.2 * Math.sin(t * 9 + tohum) * Math.sin(t * 5.3 + tohum * 3);
+      const alev = Math.max(2, Math.round(U2[3] * 0.06 * tit));
+      for (let j = 1; j <= alev; j++) {
+        const k = (ty - j) * W + bx;
+        if (ty - j >= 0) cikis[k] = j === 1 ? KAGIT : KOR;
+      }
+      const rr = Math.max(4, Math.min(16, U2[3] * 0.2));
+      const cy = ty - alev * 0.6;
+      for (let y = Math.max(0, (cy - rr) | 0); y <= Math.min(H - 1, (cy + rr) | 0); y++) {
+        for (let xx = Math.max(0, (bx - rr) | 0); xx <= Math.min(W - 1, (bx + rr) | 0); xx++) {
+          const q = Math.hypot(xx - bx, y - cy) / rr;
+          if (q >= 1) continue;
+          const k = y * W + xx;
+          if (mt[k] === M_KUMAS || mt[k] === M_SILUET || mt[k] === M_EKRAN) continue;
+          const v = (1 - q) * (1 - q) * 0.6 * tit * ol;
+          if (v > BAYER[((y & 7) << 3) | (xx & 7)]) cikis[k] = KOR;
+        }
+      }
+    }
+  }
+
+  // Yeni gelen ekranın dışından gelir: kamera dönünce oradadır.
+  function yeniMurit() {
+    let a = 0, r = 0;
+    for (let d = 0; d < 10; d++) {
+      a = rast() * Math.PI * 2;
+      r = 4.4 + rast() * 0.6;
+      const P = yansit(Math.sin(a) * r, 0, Math.cos(a) * r);
+      if (!P || P[0] < -10 || P[0] > W + 10) break;
+    }
+    muritEkle(a, r);
+  }
+
   function kare(az, grupAz, t) {
     kareNo++;
     aydinlatma(az, grupAz, t);
     zb.fill(0);
     mt.fill(0);
     const Ka = cam, ax = AY_ISIK[0], ay = AY_ISIK[1], azz = AY_ISIK[2];
-    const AY_G = 0.13;
+    const AY_G = 0.03;
+    // Otuz bir saniyede bir, göz açıp kapayana kadar: kulaklık yok, iki göz var.
+    const bakis = yuzDonuk || (!azalt && parla >= 1 && t % 31 > 30.62);
 
     // Sabit geometri
     for (let i = 0, p = 0, q = 0; i < S.adet; i++, p += 9, q += 3) {
       const nx = S.n[q], ny = S.n[q + 1], nz = S.n[q + 2];
       if ((Ka[0] - S.p[p]) * nx + (Ka[1] - S.p[p + 1]) * ny + (Ka[2] - S.p[p + 2]) * nz <= 0) continue;
-      const ayT = Math.max(0, nx * ax + ny * ay + nz * azz) * AY_G + 0.018;
+      const ayT = Math.max(0, nx * ax + ny * ay + nz * azz) * AY_G + 0.006;
       kirpVeCiz(S.p[p], S.p[p + 1], S.p[p + 2], S.p[p + 3], S.p[p + 4], S.p[p + 5], S.p[p + 6], S.p[p + 7], S.p[p + 8],
         dolguUcgen, nx, ny, nz, S.a[i], S.m[i], S.e[i], ayT, 0);
     }
@@ -428,12 +618,15 @@
       dn[i] = x * c + z * s; dn[i + 1] = G.n[i + 1]; dn[i + 2] = -x * s + z * c;
     }
     for (let i = 0, p = 0, q = 0; i < G.adet; i++, p += 9, q += 3) {
+      if (bakis && i >= KULAK_BAS) continue;
       const nx = dn[q], ny = dn[q + 1], nz = dn[q + 2];
       if ((Ka[0] - dp[p]) * nx + (Ka[1] - dp[p + 1]) * ny + (Ka[2] - dp[p + 2]) * nz <= 0) continue;
-      const ayT = Math.max(0, nx * ax + ny * ay + nz * azz) * (G.m[i] === M_KUMAS ? 0 : AY_G * 1.5) + 0.015;
+      const ayT = Math.max(0, nx * ax + ny * ay + nz * azz) * (G.m[i] === M_KUMAS ? 0 : AY_G * 1.5) + 0.005;
       kirpVeCiz(dp[p], dp[p + 1], dp[p + 2], dp[p + 3], dp[p + 4], dp[p + 5], dp[p + 6], dp[p + 7], dp[p + 8],
         dolguUcgen, nx, ny, nz, G.a[i], G.m[i], G.e[i], ayT, 0);
     }
+
+    muritCiz();
 
     // Gölgeler: silüetleri ışıktan zemine izdüşür.
     const LyN = Ly;
@@ -469,6 +662,7 @@
     const parR2 = parR * parR;
 
     // Birleştirme
+    const nabiz = (azalt ? 0.7 : 0.62 + 0.2 * Math.sin(t * 0.9)) * parla;
     for (let y = 0, i = 0; y < H; y++) {
       const by = (y & 7) << 3;
       for (let x = 0; x < W; x++, i++) {
@@ -477,17 +671,21 @@
         if (m === 0) {
           cikis[i] = MUREKKEP;
         } else if (m === M_EKRAN) {
-          cikis[i] = br[i] > t8 ? KOR : KOR_KOYU;
+          cikis[i] = br[i] * parla > t8 ? KOR : KOR_KOYU;
+        } else if (m === M_HALKA) {
+          cikis[i] = nabiz * vig[i] > t8 * 0.8 ? KOR : MUREKKEP;
+        } else if (m === M_SILUET) {
+          cikis[i] = MUREKKEP;
         } else {
           let v = br[i];
           if (m === M_ZEMIN && sh[i] === kareNo) v *= 0.1;
-          v = v * vig[i] - TABAN;
-          let renk = v > t8 ? KAGIT : MUREKKEP;
+          v = v * vig[i] * parla - TABAN;
+          let renk = v > t8 ? (v > KEMIK_ESIK ? KAGIT : KAN) : MUREKKEP;
           if (m !== M_KUMAS && parR > 0) {
             const dx = x - parX, dy = y - parY;
             const q = (dx * dx + dy * dy) / parR2;
             if (q < 3.5) {
-              const g = 0.36 / (1 + q * q * 1.6) * vig[i];
+              const g = 0.36 / (1 + q * q * 1.6) * vig[i] * parla;
               if (g > t8) renk = KOR;
             }
           }
@@ -499,9 +697,11 @@
     // Figürün dış çizgisi: siyah gölgeyle birleşmesin diye tek nokta kâğıt rengi.
     for (let y = 1, i = W + 1; y < H - 1; y++, i += 2) {
       for (let x = 1; x < W - 1; x++, i++) {
-        if (mt[i] !== M_KUMAS) continue;
-        if (mt[i - 1] !== M_KUMAS || mt[i + 1] !== M_KUMAS || mt[i - W] !== M_KUMAS || mt[i + W] !== M_KUMAS) {
-          cikis[i] = KAGIT;
+        const m = mt[i];
+        if (m === M_KUMAS) {
+          if ((mt[i - 1] !== m || mt[i + 1] !== m || mt[i - W] !== m || mt[i + W] !== m) && parla > 0.5) cikis[i] = KAGIT;
+        } else if (m === M_SILUET) {
+          if ((mt[i - 1] !== m || mt[i + 1] !== m || mt[i - W] !== m || mt[i + W] !== m) && vig[i] > 0.4 && parla > 0.5) cikis[i] = KAN;
         }
       }
     }
@@ -521,27 +721,41 @@
       cikis[k] = KAGIT;
     }
     {
+      // Tutulma: kara bir disk, çevresinde kor.
       const z = AY[0] * F[0] + AY[1] * F[1] + AY[2] * F[2];
       if (z > 0.1) {
         const mx = ox + (f * (AY[0] * R[0] + AY[1] * R[1] + AY[2] * R[2])) / z;
         const my = oy - (f * (AY[0] * U[0] + AY[1] * U[1] + AY[2] * U[2])) / z;
-        const mr = Math.max(8, H * 0.05);
-        const x0 = Math.max(0, (mx - mr) | 0), x1 = Math.min(W - 1, (mx + mr + 1) | 0);
-        const y0 = Math.max(0, (my - mr) | 0), y1 = Math.min(H - 1, (my + mr + 1) | 0);
-        const ilx = 0.72, ily = -0.38, ilz = 0.58;
+        const mr = Math.max(9, H * 0.066), dis = mr * 2.3;
+        const x0 = Math.max(0, (mx - dis) | 0), x1 = Math.min(W - 1, (mx + dis + 1) | 0);
+        const y0 = Math.max(0, (my - dis) | 0), y1 = Math.min(H - 1, (my + dis + 1) | 0);
         for (let y = y0; y <= y1; y++) {
           for (let x = x0; x <= x1; x++) {
-            const nx = (x + 0.5 - mx) / mr, ny = (y + 0.5 - my) / mr;
-            const r2 = nx * nx + ny * ny;
-            if (r2 > 1) continue;
+            const q = Math.hypot(x + 0.5 - mx, y + 0.5 - my) / mr;
+            if (q > 2.3) continue;
             const k = y * W + x;
             if (mt[k] !== 0) continue;
-            const nz = Math.sqrt(1 - r2);
-            const l = Math.max(0, nx * ilx + ny * ily + nz * ilz);
-            const d = l * (0.7 + 0.5 * GUR[((y * 3) & 255) * 256 + ((x * 3) & 255)]);
-            cikis[k] = d > BAYER[((y & 7) << 3) | (x & 7)] ? KAGIT : MUREKKEP;
+            if (q <= 1) {
+              cikis[k] = MUREKKEP;
+              continue;
+            }
+            const a = 1 - (q - 1) / 1.3;
+            const v = ((q < 1.07 ? 1.2 : 0) + a * a * a * 0.62) * vig[k] * parla;
+            if (v > BAYER[((y & 7) << 3) | (x & 7)]) cikis[k] = q < 1.05 ? KAGIT : KOR;
           }
         }
+      }
+    }
+
+    mumCiz(t);
+    muritGozleri(t);
+    if (bakis) {
+      // Kapüşonun içinde iki nokta. Yerel +z kameraya bakar.
+      const yY = 1.2 * FS, yZ = FZ + 0.25, yX = 0.062;
+      for (let i = -1; i <= 1; i += 2) {
+        const X = i * yX;
+        const P = yansit(X * c + yZ * s, yY, -X * s + yZ * c);
+        if (P) gozNokta(P[0], P[1], Math.max(1, (P[3] * 0.05) | 0), Math.max(1, (P[3] * 0.022) | 0), KOR, P[2]);
       }
     }
     ctx.putImageData(img, 0, 0);
@@ -551,16 +765,20 @@
   let az = 0.32, grupAz = az, surAz = 0;
   let isr = 0, surukle = false, sonX = 0;
   const ipucu = document.getElementById('ipucu');
-  const motor = document.getElementById('motor');
+  const burada = document.getElementById('burada');
+  let sonBurada = -1;
   let asama = 0;
   const ASAMA = [
     [1.6, 'olmaz.'],
     [4.2, 'sen döndükçe o da dönüyor.'],
-    [8, 'ısrar kayda geçti.'],
+    [8, 'yapma.'],
+    [10.8, 'o da seni görecek.'],
   ];
 
+  let kesitAcik = false;
   function kesitAc() {
     const kesit = document.getElementById('kesit');
+    kesitAcik = true;
     window.Ortak.portreResmi().then((resim) => {
       const nokta = giris.clientWidth < 700 ? 2 : 3;
       const g = Math.floor(giris.clientWidth / nokta), y = Math.floor(giris.clientHeight / nokta);
@@ -568,13 +786,15 @@
       kesit.height = y;
       const c = kesit.getContext('2d');
       const v = c.createImageData(g, y);
-      window.Ortak.atkinson(window.Ortak.griOrnekle(resim, g, y), g, y, null, new Uint32Array(v.data.buffer), KAGIT, MUREKKEP);
+      window.Ortak.atkinson(window.Ortak.griOrnekle(resim, g, y, [0, 0.3, 1, 0.66]), g, y, null, new Uint32Array(v.data.buffer), KAGIT, MUREKKEP);
       c.putImageData(v, 0, 0);
       kesit.hidden = false;
+      Ses.cigilik(0.8);
       ipucu.textContent = 'madem çok istedin.';
       setTimeout(() => {
         kesit.hidden = true;
-        ipucu.textContent = 'memnun oldun mu.';
+        kesitAcik = false;
+        ipucu.textContent = 'artık o da senin yüzünü biliyor.';
       }, 1500);
     });
   }
@@ -590,6 +810,7 @@
     const d = (e.clientX - sonX) * 0.0075;
     sonX = e.clientX;
     surAz -= d;
+    if (kesitAcik) return;
     isr += Math.abs(d);
     while (asama < ASAMA.length && isr > ASAMA[asama][0]) {
       ipucu.textContent = ASAMA[asama][1];
@@ -607,10 +828,10 @@
   window.addEventListener('pointercancel', birak);
 
   // ---------- döngü ----------
-  let gorunur = true, calisiyor = false, onceki = 0, sayacZaman = 0, sayacKare = 0, sayacMs = 0, kotu = 0;
+  let gorunur = true, calisiyor = false, onceki = 0, sayacZaman = 0, sayacKare = 0, sayacMs = 0, kotu = 0, girisAn = 0;
   const KARE_MS = 1000 / 30;
   function dongu(simdi) {
-    if (!gorunur || document.hidden) { calisiyor = false; return; }
+    if (kok.classList.contains('esikte') || !gorunur || document.hidden) { calisiyor = false; return; }
     if (azalt) calisiyor = false; else requestAnimationFrame(dongu);
     const fark = simdi - onceki;
     if (!azalt && fark < KARE_MS - 2) return;
@@ -624,6 +845,22 @@
     if (az - grupAz > LAG) grupAz = az - LAG;
     if (grupAz - az > LAG) grupAz = az + LAG;
 
+    if (girisAn) {
+      const sn = (simdi - girisAn) / 1000;
+      if (!azalt) parla = Math.max(0, Math.min(1, (sn - 0.5) / 3.1));
+      // Sen başka yerdeyken de gelmeye devam ederler.
+      const hedef = Math.min(29, sn < 37 ? sn / 3.1 : 12 + (sn - 37) / 9);
+      while (!azalt && muritler.length - 1 < hedef) yeniMurit();
+      for (let i = 0; i < muritler.length; i++) {
+        const m = muritler[i];
+        if (!m.sabit && m.r > 4.1) m.r -= dt * 0.004;
+      }
+      if (muritler.length !== sonBurada) {
+        sonBurada = muritler.length;
+        burada.textContent = `burada: ${sonBurada + 2} · biri sen`;
+      }
+    }
+
     const bas = performance.now();
     kare(az, grupAz, simdi / 1000);
     const harcanan = performance.now() - bas;
@@ -636,8 +873,7 @@
       boyutla();
     }
     if (simdi - sayacZaman > 800) {
-      const fps = Math.round((sayacKare * 1000) / (simdi - sayacZaman));
-      motor.textContent = `motor: kendi yazdı · webgl yok · ${fps} fps · sinematik, diyor`;
+      tuval.dataset.fps = Math.round((sayacKare * 1000) / (simdi - sayacZaman));
       tuval.dataset.ms = (sayacMs / sayacKare).toFixed(1);
       sayacZaman = simdi;
       sayacKare = 0;
@@ -649,6 +885,15 @@
     calisiyor = true;
     requestAnimationFrame(dongu);
   }
+
+  dinle('cevap', (tur) => { yuzDonuk = tur === 'verdi'; iste(); });
+  dinle('esik', () => {
+    girisAn = performance.now();
+    // Biri daireye yakın durur; kamera dönünce önünden geçer.
+    muritEkle(az + 0.85, 3.05, true);
+    if (azalt) for (let i = 0; i < 12; i++) muritEkle(rast() * Math.PI * 2, 4.4 + rast() * 0.6);
+    iste();
+  });
 
   boyutla();
   new IntersectionObserver((g) => {

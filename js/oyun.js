@@ -136,14 +136,15 @@
     const laflar = CAGLAR[cagIdx].laf;
     kisiler.push({
       x, y, cag: cagIdx, laf: laflar[(Math.random() * laflar.length) | 0],
-      hiz: 30 + t * 1.15 + Math.random() * 10, gidiyor: false, kare: Math.random() * 10, soz: 0,
+      hiz: 27 + t * 0.85 + Math.random() * 9, gidiyor: false, kare: Math.random() * 10, soz: 0,
+      sabir: 7 + Math.random() * 6,
     });
   }
 
   function kulaklikTak() {
     if (durum !== 'oyun' || oyuncu.bekleme > 0) return;
     oyuncu.kulak = 1.6;
-    oyuncu.bekleme = 5;
+    oyuncu.bekleme = 4;
   }
 
   function guncelle(dt) {
@@ -176,9 +177,9 @@
     flas = Math.max(0, flas - dt);
 
     uretim -= dt;
-    if (uretim <= 0 && kisiler.length < 26) {
+    if (uretim <= 0 && kisiler.length < 20) {
       kisiUret();
-      uretim = Math.max(0.42, 1.25 - t * 0.03);
+      uretim = Math.max(0.55, 1.3 - t * 0.026);
     }
 
     for (const k of kisiler) {
@@ -189,6 +190,13 @@
         k.y -= (ay / u) * 92 * dt;
         continue;
       }
+      // Sabrı biten vazgeçer. O'nun tek silahı budur: beklemek.
+      k.sabir -= dt;
+      if (k.sabir <= 0) {
+        k.gidiyor = true;
+        k.laf = 'Neyse.';
+        continue;
+      }
       k.x += (ax / u) * k.hiz * dt;
       k.y += (ay / u) * k.hiz * dt;
       k.soz = u < 90 ? 1 : 0;
@@ -197,15 +205,27 @@
         k.laf = 'Kaba.';
         continue;
       }
-      if (u < 14 && oyuncu.darbe <= 0 && !tanri) {
+      if (u < 13 && oyuncu.darbe <= 0 && !tanri) {
         oyuncu.pil--;
-        oyuncu.darbe = 1.3;
+        oyuncu.darbe = 1.5;
         sarsinti = 0.28;
         flas = 0.12;
         sonLaf = k.laf;
         k.gidiyor = true;
         k.laf = 'Sağ ol abi!';
         if (oyuncu.pil <= 0) { bitir(false); return; }
+      }
+    }
+    // Kalabalık: üst üste binmesinler, çevreni sarsınlar.
+    for (let i = 0; i < kisiler.length; i++) {
+      for (let j = i + 1; j < kisiler.length; j++) {
+        const a = kisiler[i], b = kisiler[j];
+        const ax = b.x - a.x, ay = b.y - a.y, u2 = ax * ax + ay * ay;
+        if (u2 > 0 && u2 < 256) {
+          const u = Math.sqrt(u2), it = ((16 - u) / u) * 0.5;
+          a.x -= ax * it * 0.5; a.y -= ay * it * 0.5;
+          b.x += ax * it * 0.5; b.y += ay * it * 0.5;
+        }
       }
     }
     kisiler = kisiler.filter((k) => k.x > -40 && k.x < G + 40 && k.y > -40 && k.y < Y + 40);
@@ -216,7 +236,7 @@
   function bitir(kazandi) {
     durum = 'bitti';
     const dayanilan = Math.min(SURE, t);
-    if (dayanilan > rekor) {
+    if (dayanilan > rekor && !tanri) {
       rekor = dayanilan;
       try { localStorage.setItem('kadim.rekor', String(rekor)); } catch (e) { /* gizli sekme */ }
       rekorGoster();
@@ -226,7 +246,7 @@
       perdeResim.src = 'assets/suret/goruldu.png';
       perdeBaslik.textContent = 'Gün bitti.';
       perdeMetin.textContent = 'Kimseyle konuşmadın. Ödül yok; zaten kimse vermeye gelmedi. İyi ki de.';
-      perdeNot.textContent = `31 saniye · ${['sıfır', 'bir', 'iki'][3 - oyuncu.pil] || 'üç'} sohbet`;
+      perdeNot.textContent = tanri ? '31 saniye · tanrı moduyla · rekora yazılmadı' : `31 saniye · ${['sıfır', 'bir', 'iki'][3 - oyuncu.pil]} sohbet`;
     } else {
       perdeResim.src = 'assets/suret/temas.png';
       perdeBaslik.textContent = 'Konuştun.';
@@ -235,7 +255,12 @@
     }
     basla.textContent = 'Bir daha';
     perde.hidden = false;
-    basla.focus({ preventScroll: true });
+    // Boşluğa basmaya devam eden sonucu görmeden yeniden başlamasın.
+    basla.disabled = true;
+    setTimeout(() => {
+      basla.disabled = false;
+      basla.focus({ preventScroll: true });
+    }, 700);
     ciz();
   }
 
@@ -332,12 +357,12 @@
     c.fillStyle = KAG;
     c.textAlign = 'left';
     c.fillText('sosyal pil', 5, 10);
-    for (let i = 0; i < 3; i++) dikdortgen(52 + i * 9, 3, 7, 7, i < oyuncu.pil ? KOR : CIZGI);
+    for (let i = 0; i < 3; i++) dikdortgen(55 + i * 9, 3, 7, 7, i < oyuncu.pil ? KOR : CIZGI);
     c.fillStyle = KAG;
-    c.fillText('kulaklık', 92, 10);
-    dikdortgen(132, 4, 40, 5, CIZGI);
-    const dolu = oyuncu.kulak > 0 ? 1 : 1 - oyuncu.bekleme / 5;
-    dikdortgen(132, 4, 40 * dolu, 5, oyuncu.kulak > 0 ? KOR : KAG);
+    c.fillText('kulaklık', 94, 10);
+    dikdortgen(135, 4, 40, 5, CIZGI);
+    const dolu = oyuncu.kulak > 0 ? 1 : 1 - oyuncu.bekleme / 4;
+    dikdortgen(135, 4, 40 * dolu, 5, oyuncu.kulak > 0 ? KOR : KAG);
     c.textAlign = 'right';
     c.fillStyle = KOR;
     c.fillText(`${Math.max(0, SURE - t).toFixed(1).replace('.', ',')} sn`, G - 5, 10);
@@ -402,12 +427,21 @@
     tus[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
   });
   addEventListener('blur', () => { for (const k of Object.keys(tus)) tus[k] = false; });
+  // Farede imleci izler; dokunmatikte göreli sürüklenir, parmak karakterin üstünü kapatmasın.
+  let farkX = 0, farkY = 0;
   function isaretKonum(e) {
     const r = tuval.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * G, y: ((e.clientY - r.top) / r.height) * Y };
+    return { x: ((e.clientX - r.left) / r.width) * G + farkX, y: ((e.clientY - r.top) / r.height) * Y + farkY };
   }
   tuval.addEventListener('pointerdown', (e) => {
     if (durum !== 'oyun') return;
+    farkX = 0;
+    farkY = 0;
+    if (e.pointerType === 'touch') {
+      const k = isaretKonum(e);
+      farkX = oyuncu.x - k.x;
+      farkY = oyuncu.y - k.y;
+    }
     isaret = isaretKonum(e);
     tuval.setPointerCapture(e.pointerId);
   });
@@ -423,6 +457,10 @@
       return tanri ? 'Tanrı modu açık. Kayda geçti.' : 'Kapandı. Yine kayda geçti.';
     },
   };
+
+  if (matchMedia('(pointer:coarse)').matches) {
+    perdeNot.textContent = 'parmağını sürükle: kaç · Kulaklık düğmesi: duyma';
+  }
 
   // Perdenin arkası boş kalmasın
   kur();

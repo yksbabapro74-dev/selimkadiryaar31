@@ -1,0 +1,4 @@
+# Gizli katların düz kaynağı ve harita: yayına yalnızca şifreli js/gizli-veri.js gider.
+tools/gizli_kaynak/
+GIZLI.md
+__pycache__/

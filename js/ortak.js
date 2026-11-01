@@ -28,10 +28,26 @@ window.Ortak = (function () {
     cevap: depo.al('cevap') || null, // 'verdi' | 'vermedi'
   };
   function unut() {
-    ['ad', 'gelis', 'cevap', 'rekor', 'ses'].forEach((k) => depo.sil(k));
+    try {
+      Object.keys(localStorage).filter((k) => k.startsWith('kadim.')).forEach((k) => localStorage.removeItem(k));
+    } catch (e) { /* gizli sekme */ }
     kayit.ad = null;
     kayit.gelis = 0;
     kayit.cevap = null;
+  }
+
+  // Bu makinede zaten görünen şeyler. Okunur, gösterilir, hiçbir yere gitmez.
+  function kimlik() {
+    const ua = navigator.userAgent;
+    const [os, os2] = /Android/.test(ua) ? ['Android', "Android'den"]
+      : /iPhone|iPad|iPod/.test(ua) ? ['iPhone', "iPhone'dan"]
+        : /Windows/.test(ua) ? ['Windows', "Windows'tan"]
+          : /Mac OS X/.test(ua) ? ['Mac', "Mac'ten"]
+            : /Linux/.test(ua) ? ['Linux', "Linux'tan"] : ['bilinmeyen makine', 'bilinmeyen bir makineden'];
+    const tarayici = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox'
+      : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'tarayıcı';
+    const d = new Date(), iki = (n) => String(n).padStart(2, '0');
+    return { os, osDan: os2, tarayici, ekran: `${screen.width}×${screen.height}`, saat: `${iki(d.getHours())}.${iki(d.getMinutes())}`, tarih: d };
   }
 
   // ---------- modüller arası haberleşme ----------
@@ -50,6 +66,7 @@ window.Ortak = (function () {
   let portreSoz = null;
   function portreResmi() {
     if (!portreSoz) {
+      // Gizli katlarda portre verisi sonradan yüklenir; ortak.js onu burada bekler.
       portreSoz = new Promise((coz, red) => {
         const r = new Image();
         r.onload = () => coz(r);
@@ -180,7 +197,7 @@ window.Ortak = (function () {
   }
 
   return {
-    azalt, RENK, CSS_RENK, BAYER, depo, kayit, unut, dinle, yay, javaHash,
+    azalt, RENK, CSS_RENK, BAYER, depo, kayit, unut, kimlik, dinle, yay, javaHash,
     portreResmi, griOrnekle, atkinson, dikisResmi, kalem, muhur,
   };
 })();

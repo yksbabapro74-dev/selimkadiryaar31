@@ -148,17 +148,30 @@ window.Varlik = (function () {
   }
 
   // ---------- ikinci imleç: 3,1 saniye geriden gelir ----------
+  let izHedef = null;
+  const izP = { x: innerWidth / 2, y: innerHeight / 2 };
   function ikinciImlec() {
     if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
     const iz = [];
     let son = 0, baslat = 0;
     addEventListener('pointermove', (e) => {
       iz.push(performance.now(), e.clientX, e.clientY);
+      izP.x = e.clientX;
+      izP.y = e.clientY;
     }, { passive: true });
     (function dongu(z) {
       requestAnimationFrame(dongu);
       if (z - son < 16) return;
       son = z;
+      if (izHedef) {
+        // Biri senin imlecini kendi başına götürüyor.
+        const r = izHedef.getBoundingClientRect();
+        izP.x += (r.left + r.width / 2 - izP.x) * 0.006;
+        izP.y += (r.top + r.height / 2 - izP.y) * 0.006;
+        izEl.style.transform = `translate(${izP.x}px,${izP.y}px)`;
+        izEl.removeAttribute('hidden');
+        return;
+      }
       if (!girdi || z - girisAn < 31000) return;
       const hedef = z - 3100;
       let i = baslat;
@@ -171,7 +184,7 @@ window.Varlik = (function () {
       }
       if (iz.length >= 3 && iz[i] <= hedef) {
         izEl.style.transform = `translate(${iz[i + 1]}px,${iz[i + 2]}px)`;
-        izEl.hidden = false;
+        izEl.removeAttribute('hidden');
       }
     })(performance.now());
   }
@@ -273,14 +286,11 @@ window.Varlik = (function () {
   }
 
   // ---------- sekme ----------
-  const baslik = document.title;
   let gittiAn = 0;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       gittiAn = performance.now();
-      document.title = kayit.ad ? `(1) ${kayit.ad}, geri gel` : '(1) görüldü';
     } else {
-      document.title = baslik;
       const sn = Math.round((performance.now() - gittiAn) / 1000);
       if (girdi && gittiAn && sn >= 4) fisilda(`${sn} saniye yoktun.`, { zorla: true });
     }
@@ -334,5 +344,5 @@ window.Varlik = (function () {
     }
   });
 
-  return { fisilda, oYaz, cevrimici, cevrimdisi, sonHareket: () => sonHareket };
+  return { fisilda, oYaz, cevrimici, cevrimdisi, sonHareket: () => sonHareket, izeGit: (el) => { izHedef = el; } };
 })();

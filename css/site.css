@@ -1,3 +1,4 @@
+/* 04.12: kat -29'u menüden sildim. koridor hâlâ orada. */
 @font-face{font-family:"Jacquard 12";src:url(../assets/fonts/Jacquard12-normal-400.woff2) format("woff2");font-display:swap}
 @font-face{font-family:"VT323";src:url(../assets/fonts/VT323-normal-400.woff2) format("woff2");font-display:swap}
 @font-face{font-family:"EB Garamond";src:url(../assets/fonts/EBGaramond-normal-400.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -40,6 +41,13 @@ small{font-size:.78em}
 .esik.kapaniyor{opacity:0;pointer-events:none}
 #esik-muhur{width:310px;height:310px;max-width:70vw;max-height:70vw;image-rendering:pixelated}
 .esik-metin{margin:18px 0 22px;font-size:25px;line-height:1.24;min-height:2.5em}
+.esik-form{display:flex;gap:8px;width:min(420px,100%);margin:0}
+.esik-form[hidden]{display:none}
+.esik-form input{flex:1 1 auto;min-width:0;background:#000;color:var(--kagit);border:2px solid var(--kagit);padding:9px 12px 10px;font:400 24px/1 var(--ekran);text-align:center}
+.esik-form input:focus{outline:2px solid var(--kor);outline-offset:2px}
+.esik-soyle{flex:0 0 auto;font:400 24px/1 var(--ekran);background:var(--kagit);color:#000;border:2px solid var(--kagit);padding:9px 16px 10px;cursor:pointer}
+.esik-soyle:hover{background:var(--kor);border-color:var(--kor)}
+.esik-cevap{margin:10px 0 0;min-height:1.2em;max-width:min(520px,100%);font:400 23px/1.15 var(--ekran);color:var(--kor);overflow-wrap:anywhere}
 .esik-tut{font:400 26px/1 var(--ekran);background:none;color:var(--kagit);border:2px solid var(--kagit);padding:12px 26px 13px;min-width:190px;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
 .esik-tut:hover,.esik-tut:active{background:var(--kagit);color:#000}
 .esik-tut:disabled{opacity:0}
@@ -55,6 +63,7 @@ small{font-size:.78em}
 #titrek{position:fixed;inset:0;z-index:21;pointer-events:none;opacity:0;background:#000}
 #gozler{position:fixed;inset:0;width:100%;height:100%;z-index:30;pointer-events:none;image-rendering:pixelated}
 #iz{position:fixed;left:0;top:0;z-index:35;pointer-events:none;opacity:.86}
+#iz[hidden]{display:none}
 #fisilti{position:fixed;left:50%;bottom:54px;transform:translateX(-50%);z-index:42;margin:0;padding:4px 12px 5px;font:400 26px/1.05 var(--ekran);color:var(--kor);background:#000;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .25s steps(3)}
 #fisilti.acik{opacity:1}
 #o-durum{position:fixed;left:var(--yan);bottom:16px;z-index:40;margin:0;padding:1px 6px 2px;font:400 18px/1.1 var(--ekran);color:var(--soluk);background:rgba(10,8,7,.82);pointer-events:none}
@@ -69,11 +78,11 @@ html.esikte #ses-dugme,html.esikte #o-durum{opacity:0;pointer-events:none}
 #karartma[hidden]{display:none}
 #karartma.acik{opacity:1}
 #karartma.kapaniyor{opacity:0;transition-duration:1.2s}
-#kar-mumlar{display:flex;gap:clamp(4px,1.5vw,18px);align-items:flex-end;justify-content:center;flex-wrap:wrap;max-width:92vw;position:absolute}
+#kar-mumlar{position:absolute;inset:0}
 #kar-mumlar[hidden]{display:none}
-.kmum{display:block;width:4px;height:16px;background:var(--kor);box-shadow:0 -7px 0 -1px var(--kagit);animation:kmum .36s steps(2) infinite}
+.kmum{position:absolute;left:50%;top:50%;display:block;width:5px;height:18px;margin:-9px 0 0 -2px;background:var(--kagit);box-shadow:0 -9px 0 -1px var(--kor);animation:kmum .36s steps(2) infinite}
 .kmum.sondu{background:none;box-shadow:none;animation:none}
-@keyframes kmum{50%{height:11px}}
+@keyframes kmum{50%{box-shadow:0 -6px 0 -1px var(--kor)}}
 #kar-yuz{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 #kar-yuz[hidden]{display:none}
 #kar-yazi{position:relative;text-align:center;padding:0 16px}
@@ -94,7 +103,7 @@ html.esikte #ses-dugme,html.esikte #o-durum{opacity:0;pointer-events:none}
 /* dither dikişleri site.js tarafından doldurulur */
 .dikis{height:72px;image-rendering:pixelated;background-repeat:repeat-x}
 .ilahi{overflow:hidden;white-space:nowrap;font:400 20px/1 var(--ekran);color:#544b3e;padding:10px 0 11px;border-block:1px solid var(--cizgi);background:var(--murekkep);letter-spacing:.14em}
-.ilahi span{display:inline-block;animation:ilahi 96s linear infinite}
+.ilahi span{display:inline-block;animation:ilahi 160s linear infinite}
 .ilahi:nth-of-type(even) span{animation-direction:reverse}
 @keyframes ilahi{to{transform:translateX(-50%)}}
 
@@ -178,7 +187,7 @@ html.esikte #ses-dugme,html.esikte #o-durum{opacity:0;pointer-events:none}
 .levha a{display:block;cursor:zoom-in;outline-offset:4px}
 .levha img,.bugun-resim img{width:340px;max-width:100%;height:auto}
 .levha img{image-rendering:pixelated}
-.levha a:hover img{filter:invert(1)}
+.levha a:hover img{outline:2px solid var(--kor);outline-offset:-2px}
 .levha figcaption,.bugun-resim figcaption{padding-top:9px;font-size:19px;line-height:1.26}
 .levha-no{display:block;font:400 18px/1.15 var(--ekran);color:var(--kor);margin-bottom:3px}
 .levha b,.bugun-resim b{font-weight:600}
@@ -187,7 +196,7 @@ html.esikte #ses-dugme,html.esikte #o-durum{opacity:0;pointer-events:none}
 /* ---------- külliyat ---------- */
 .katalog{list-style:none;margin:0;padding:0;border-top:2px solid var(--cizgi-acik)}
 .katalog li{display:grid;grid-template-columns:128px 270px minmax(0,1fr) 150px;gap:0 24px;align-items:baseline;padding:14px 10px 15px;border-bottom:1px solid var(--cizgi)}
-.katalog li:hover{background:#22090600;background:#230a06}
+.katalog li:hover{background:#230a06}
 .katalog li:hover h3{color:var(--kor)}
 .katalog time{font:400 20px/1.1 var(--ekran);color:var(--soluk)}
 .katalog h3{font:400 36px/1 var(--kara-harf);margin:0}
@@ -206,6 +215,19 @@ html.esikte #ses-dugme,html.esikte #o-durum{opacity:0;pointer-events:none}
 .emirler li{counter-increment:e;display:grid;grid-template-columns:92px 1fr;align-items:baseline;padding:13px 0;border-top:1px solid var(--cizgi);font-size:27px;line-height:1.2}
 .emirler li::before{content:counter(e,upper-roman);font:400 42px/1 var(--kara-harf);color:var(--kor)}
 .emirler li:last-child{border-bottom:1px solid var(--cizgi)}
+.kod{font-family:var(--ekran);font-style:normal;color:var(--kor);white-space:nowrap}
+.kod::before{content:"["}
+.kod::after{content:"]"}
+.emirler li.kazinmis{font-style:italic;color:var(--soluk);font-size:23px}
+.duvar-yazi{break-inside:avoid;width:340px;max-width:100%;margin:0 auto 44px;padding:42px 12px;text-align:center;font:400 24px/1.3 var(--ekran);color:#a33a26;letter-spacing:.06em}
+.secince{margin:22px 0 0;color:transparent;font-size:18px;user-select:text}
+.secince .kod{color:transparent}
+.secince::selection,.secince *::selection{background:#000;color:var(--kor)}
+a.gizli-bag{color:inherit;text-decoration:none;cursor:text}
+.sekme-kapi{position:absolute;left:-9999px}
+.sekme-kapi:focus{position:static;display:block;margin-top:14px;font:400 22px/1.2 var(--ekran);color:var(--kor);outline:0}
+.otuzbir{cursor:default;user-select:none}
+#sokak{position:fixed;inset:0;width:100%;height:100%;z-index:38;pointer-events:none;image-rendering:pixelated;opacity:.15;display:none}
 .emirler li.cignendi{color:var(--soluk);text-decoration:line-through;text-decoration-color:var(--kor);text-decoration-thickness:2px}
 .otuzbir-neden{border:2px solid var(--cizgi);padding:18px 20px 8px;margin-top:38px}
 .otuzbir-neden h3{font:400 36px/1 var(--kara-harf);margin:0 0 12px;color:var(--kor)}

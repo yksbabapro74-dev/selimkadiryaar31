@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const { azalt, kayit, depo, yay, kalem, CSS_RENK } = window.Ortak;
-  const Ses = window.Ses;
+  const Ses = window.Ses, Sifre = window.Sifre;
   const kok = document.documentElement;
   const esik = document.getElementById('esik');
   if (!esik) return;
@@ -12,18 +12,27 @@
   const tut = document.getElementById('esik-tut');
   const sessiz = document.getElementById('esik-sessiz');
   const yazi = document.getElementById('esik-metin');
+  const form = document.getElementById('esik-form');
+  const parola = document.getElementById('esik-parola');
+  const cevap = document.getElementById('esik-cevap');
   const SURE = 3.1;
 
   // Geri gelen tanınır.
   function satirlar() {
-    const { ad, gelis, cevap } = kayit;
+    const { ad, gelis } = kayit;
     const s = [];
-    if (cevap === 'verdi') {
+    if (depo.al('taslak')) {
+      s.push(ad ? `${ad}.` : 'Sen.', 'Taslakları gördün. Kimseye söylemedin, değil mi?');
+    } else if (depo.al('kacti')) {
+      s.push(ad ? `Çağrıyı yarıda bıraktın, ${ad}.` : 'Çağrıyı yarıda bıraktın.', 'Kaçmak da cevaptır. Not edildi.');
+    } else if (kayit.cevap === 'verdi') {
       s.push(ad ? `Cevap vermiştin, ${ad}.` : 'Cevap vermiştin.', 'Kapanmadı.');
     } else if (gelis >= 30) {
       s.push(ad ? `${ad}.` : 'Sen.', `${gelis + 1}. gelişin. Artık saymıyoruz.`);
     } else if (gelis >= 1) {
       s.push(ad ? `Yine geldin, ${ad}.` : 'Yine geldin.', `${gelis + 1}. gelişin. Sayılıyor.`);
+      const sk = depo.al('sonkat'), dk = Math.round((parseInt(depo.al('sonsure'), 10) || 0) / 60);
+      if (sk) s.push(`Geçen sefer ${dk ? dk + ' dakika kaldın' : 'çabuk kaçtın'}. En son ${sk} bakıyordun.`);
     } else {
       s.push('Buraya kendi isteğinle geldin.', 'Bunu sonra kendine hatırlat.');
     }
@@ -32,12 +41,17 @@
       const iki = (n) => String(n).padStart(2, '0');
       s.push(`Saat ${iki(d.getHours())}.${iki(d.getMinutes())}. Bu saatte uyanık iki kişi var.`);
     }
-    return s;
+    if (d.getHours() === 4 && d.getMinutes() === 12) s.unshift('Saat 04.12. Commit atıyor. Sessiz ol.');
+    return s.slice(0, 3);
   }
-  satirlar().forEach((m, i) => {
-    if (i) yazi.appendChild(document.createElement('br'));
-    yazi.appendChild(document.createTextNode(m));
-  });
+  function metinYaz(liste) {
+    yazi.textContent = '';
+    liste.forEach((m, i) => {
+      if (i) yazi.appendChild(document.createElement('br'));
+      yazi.appendChild(document.createTextNode(m));
+    });
+  }
+  metinYaz(satirlar());
 
   const m = (N - 1) / 2, dis = N * 0.48, ic = N * 0.41;
   const P = (i, r) => {
@@ -95,7 +109,7 @@
     }
   }
 
-  let p = 0, tutuyor = false, bitti = false, sonZ = performance.now(), acik = 0.04;
+  let p = 0, tutuyor = false, bitti = false, sonZ = performance.now(), acik = 0.04, acildi = false;
   function dongu(z) {
     if (bitti) return;
     requestAnimationFrame(dongu);
@@ -106,7 +120,7 @@
     Ses.yukselt(p);
     if (Math.floor(p * 31) > Math.floor(once * 31)) Ses.tik(0.5);
     // Beklerken göz hafifçe aralanır; tuttukça açılır.
-    const hedef = 0.04 + p * 0.3 + (azalt ? 0 : Math.max(0, Math.sin(z / 900) - 0.86) * 0.5);
+    const hedef = (acildi ? 0.13 : 0.04) + p * 0.3 + (azalt ? 0 : Math.max(0, Math.sin(z / 900) - 0.86) * 0.5);
     acik += (hedef - acik) * Math.min(1, dt * 6);
     ciz(p, acik);
     tut.textContent = tutuyor ? 'bırakma' : 'basılı tut';
@@ -147,6 +161,41 @@
     Ses.uyan();
   }
   function birak() { tutuyor = false; }
+  // Parola doğruysa basılı tutma aşaması açılır. Bu sekmede bir kez söylemek yeter.
+  function kapiAc(soz) {
+    acildi = true;
+    form.hidden = true;
+    cevap.textContent = '';
+    if (soz) metinYaz(soz);
+    tut.hidden = false;
+    sessiz.hidden = false;
+    tut.focus({ preventScroll: true });
+  }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const m = parola.value;
+    if (!m.trim()) return;
+    if (Sifre.dene(m)) {
+      parola.value = '';
+      kapiAc(['Bunu sana kim verdi?', 'Neyse. Kayda geçti.']);
+    } else {
+      cevap.textContent = Sifre.yanlisSoz(m);
+      parola.value = '';
+      parola.focus();
+    }
+  });
+  // Kapıyı elle söken olursa: girer, ama defterde görünür.
+  new MutationObserver(() => {
+    if (document.getElementById('esik') || bitti) return;
+    bitti = true;
+    depo.yaz('hirsiz', '1');
+    kok.classList.remove('esikte');
+    yay('esik', false);
+    console.log('%cKapıyı söktün.', 'font:400 26px serif;color:#f23a1d');
+    console.log('Parola hâlâ sende yok. Yukarısı açıldı; altı açılmaz. Not edildi.');
+    setTimeout(() => window.Varlik.fisilda('kapıyı söktün. not edildi.', { zorla: true, sure: 6200 }), 900);
+  }).observe(document.body, { childList: true });
+
   tut.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     try { tut.setPointerCapture(e.pointerId); } catch (h) { /* eski tarayıcı */ }
@@ -170,5 +219,6 @@
 
   ciz(0, acik);
   requestAnimationFrame(dongu);
-  tut.focus({ preventScroll: true });
+  if (Sifre.gecti()) kapiAc();
+  else parola.focus({ preventScroll: true });
 })();

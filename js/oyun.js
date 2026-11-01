@@ -1,13 +1,15 @@
-// SELAM VERME: 31 saniye kimseyle konuşma. Karakter modeli v0.1, gövdesi yok.
+// SELAM VERME: gece adını sesleniyorlar. 31 saniye kimseye cevap verme.
+// Karakter modeli v0.1, gövdesi yok. Karanlıkta yalnızca gözleri görürsün.
 (function () {
   'use strict';
   const tuval = document.getElementById('oyun-tuval');
   if (!tuval) return;
   const c = tuval.getContext('2d');
   const G = 480, Y = 270, OLCEK = tuval.width / G;
-  const { CSS_RENK } = window.Ortak;
-  const MUR = CSS_RENK.murekkep, KAG = CSS_RENK.kagit, KOR = CSS_RENK.kor;
-  const CIZGI = '#3a362c';
+  const { CSS_RENK, BAYER } = window.Ortak;
+  const Ses = window.Ses;
+  const MUR = CSS_RENK.murekkep, KAG = CSS_RENK.kagit, KOR = CSS_RENK.kor, KAN = CSS_RENK.kan;
+  const CIZGI = '#2e2822';
   const SURE = 31;
 
   const perde = document.getElementById('perde');
@@ -26,26 +28,26 @@
   const CAGLAR = [
     {
       ad: 'MÖ 2600 · SÜMER', bas: 0,
-      laf: ['Selam!', 'Tablete bakar mısın?', 'Çivi yazısı bozuldu', 'Zigguratta ağ çekmiyor', 'Buğday hesabım tutmuyor'],
+      laf: ['Selam.', 'Selam dedim.', 'Tablete bak.', 'Adın ne?', 'Duyuyorsun.'],
     },
     {
       ad: '842 · BİZANS', bas: 8,
-      laf: ['Efendim, selam!', 'Mozaik kaymış', 'Hipodromda maç var', 'Grejuva tarifi kayboldu', 'Bir ikon yapsana'],
+      laf: ['Efendim.', 'Kapıyı aç.', 'Yüzüme bak.', 'Neden susuyorsun?', 'Mum söndü.'],
     },
     {
       ad: '1683 · OSMANLI', bas: 16,
-      laf: ['Evladım, selam yok mu?', 'Kimlerdensin?', 'Düğüne gelmedin', 'Matbaayı kurar mısın?', 'Annen nasıl?'],
+      laf: ['Evladım.', 'Kimlerdensin?', 'Annen seni çağırıyor.', 'Geç oldu, gel.', 'Selam yok mu?'],
     },
     {
       ad: 'BUGÜN · KAMPÜS', bas: 24,
-      laf: ['Yazıcımı tamir eder misin?', 'Bir oyun fikrim var', '%50 ortak olalım', 'Format atar mısın?', 'Bana da site yapsana', 'Bilgisayarcı değil misin?', 'Minecraft sunucusu kur', 'GTA 6 ne zaman?'],
+      laf: ['Abi.', 'Bir saniye.', 'Arkana baksana.', 'Bir şey soracağım.', 'Görüldü attın.', 'Yazdım sana.', 'Neden cevap vermiyorsun?', 'Bilgisayarcı değil misin?'],
     },
   ];
   const KAYIP = [
-    'Hâl hatır sordun. Kırk dakika sürdü.',
-    'Yazıcısını tamir ettin. «Bir kereye mahsus» demişti.',
-    'Oyun fikrini dinledin. Açık dünya, MMO, yüzde elli ortak.',
-    'Kimlerden olduğunu anlattın. Annenle konuşacaklar.',
+    'Arkanı döndün. Tanıdın. Keşke tanımasaydın.',
+    'Annenin sesiydi. Annen evde.',
+    '«Efendim?» dedin. Yalnızca bu kadar.',
+    'Kimlerden olduğunu söyledin. Artık onlar da biliyor.',
   ];
 
   // Sprite: # = kâğıt, . = saydam. Her çağın şapkası ayrı.
@@ -106,13 +108,33 @@
   }
   const ZEMIN = CAGLAR.map((_, i) => zeminCiz(i));
 
+  // Karanlık: ortasında delik olan iki kat büyüklüğünde bir örtü. Hücre başına 2 piksel.
+  function karanlikYap(R) {
+    const t = document.createElement('canvas');
+    t.width = G;
+    t.height = Y;
+    const m = t.getContext('2d');
+    const v = m.createImageData(G, Y);
+    const p = new Uint32Array(v.data.buffer);
+    for (let y = 0, i = 0; y < Y; y++) {
+      for (let x = 0; x < G; x++, i++) {
+        const d = Math.hypot(x * 2 + 1 - G, y * 2 + 1 - Y) / R;
+        const k = d < 0.58 ? 0 : d > 1 ? 1 : (d - 0.58) / 0.42;
+        if (k > BAYER[((y & 7) << 3) | (x & 7)]) p[i] = 0xff000000;
+      }
+    }
+    m.putImageData(v, 0, 0);
+    return t;
+  }
+  const KARANLIK = [80, 86, 92].map(karanlikYap);
+
   const tus = {};
   let durum = 'perde', sonZaman = 0, t = 0, oyuncu, kisiler, uretim, sarsinti, flas, cagIdx, cagYazi, sonLaf, isaret, tanri = false;
   let rekor = 0;
   try { rekor = parseFloat(localStorage.getItem('kadim.rekor')) || 0; } catch (e) { /* gizli sekme */ }
 
   function rekorGoster() {
-    rekorYazi.textContent = rekor >= SURE ? 'rekor: 31,0 sn · kimseyle konuşmadın' : rekor > 0 ? `rekor: ${rekor.toFixed(1).replace('.', ',')} sn` : 'rekor: yok';
+    rekorYazi.textContent = rekor >= SURE ? 'rekor: 31,0 sn · kimseye cevap vermedin' : rekor > 0 ? `rekor: ${rekor.toFixed(1).replace('.', ',')} sn` : 'rekor: yok';
   }
   rekorGoster();
 
@@ -137,7 +159,7 @@
     kisiler.push({
       x, y, cag: cagIdx, laf: laflar[(Math.random() * laflar.length) | 0],
       hiz: 27 + t * 0.85 + Math.random() * 9, gidiyor: false, kare: Math.random() * 10, soz: 0,
-      sabir: 7 + Math.random() * 6,
+      sabir: 7 + Math.random() * 6, kare0: Math.random() * 40,
     });
   }
 
@@ -202,7 +224,7 @@
       k.soz = u < 90 ? 1 : 0;
       if (oyuncu.kulak > 0 && u < 40) {
         k.gidiyor = true;
-        k.laf = 'Kaba.';
+        k.laf = 'Duyuyorsun, biliyorum.';
         continue;
       }
       if (u < 13 && oyuncu.darbe <= 0 && !tanri) {
@@ -212,7 +234,9 @@
         flas = 0.12;
         sonLaf = k.laf;
         k.gidiyor = true;
-        k.laf = 'Sağ ol abi!';
+        k.laf = 'Buldum.';
+        Ses.vurus(0.9);
+        Ses.fisilti(0.9);
         if (oyuncu.pil <= 0) { bitir(false); return; }
       }
     }
@@ -244,12 +268,16 @@
     perdeResim.hidden = false;
     if (kazandi) {
       perdeResim.src = 'assets/suret/goruldu.png';
-      perdeBaslik.textContent = 'Gün bitti.';
-      perdeMetin.textContent = 'Kimseyle konuşmadın. Ödül yok; zaten kimse vermeye gelmedi. İyi ki de.';
-      perdeNot.textContent = tanri ? '31 saniye · tanrı moduyla · rekora yazılmadı' : `31 saniye · ${['sıfır', 'bir', 'iki'][3 - oyuncu.pil]} sohbet`;
+      perdeBaslik.textContent = 'Sabah oldu.';
+      perdeMetin.innerHTML = tanri
+        ? 'Kimseye cevap vermedin. Yarın gece yine gelecekler.'
+        : 'Kimseye cevap vermedin. Yarın gece yine gelecekler. Kapının altından bir kâğıt: <span class="kod">sabah</span>';
+      perdeNot.textContent = tanri ? '31 saniye · tanrı moduyla · rekora yazılmadı' : `31 saniye · ${['hiç', 'bir kez', 'iki kez'][3 - oyuncu.pil]} seslendiler, duydun`;
+      Ses.can(130.81, 12, 0.6);
     } else {
       perdeResim.src = 'assets/suret/temas.png';
-      perdeBaslik.textContent = 'Konuştun.';
+      perdeBaslik.textContent = 'Cevap verdin.';
+      Ses.cigilik(0.55);
       perdeMetin.textContent = KAYIP[(Math.random() * KAYIP.length) | 0];
       perdeNot.textContent = `${dayanilan.toFixed(1).replace('.', ',')} sn dayandın · son duyduğun: «${sonLaf}»`;
     }
@@ -336,9 +364,22 @@
     for (const k of sirali) kisiCiz(k);
     oyuncuCiz();
 
+    // Işığın dışı görünmez. Yalnızca gözleri kalır.
+    const titrek = Math.floor(performance.now() / 110) % 7;
+    const orto = KARANLIK[titrek < 4 ? 1 : titrek < 6 ? 2 : 0];
+    c.imageSmoothingEnabled = false;
+    c.drawImage(orto, oyuncu.x - G, oyuncu.y - Y, G * 2, Y * 2);
+    for (const k of kisiler) {
+      if (k.x < -4 || k.x > G + 4 || k.y < -4 || k.y > Y + 4) continue;
+      if (Math.sin(t * 1.3 + k.kare0) > 0.97) continue;
+      const renk = k.gidiyor ? KAN : KOR;
+      dikdortgen(Math.round(k.x - 3), Math.round(k.y - 6), 2, 1, renk);
+      dikdortgen(Math.round(k.x + 1), Math.round(k.y - 6), 2, 1, renk);
+    }
+
     // Sözler: en yakın üç kişi konuşur, yoksa ekran dolar.
     const konusan = kisiler
-      .filter((k) => k.soz || k.gidiyor)
+      .filter((k) => (k.soz || k.gidiyor) && Math.hypot(k.x - oyuncu.x, k.y - oyuncu.y) < 104)
       .sort((a, b) => Math.hypot(a.x - oyuncu.x, a.y - oyuncu.y) - Math.hypot(b.x - oyuncu.x, b.y - oyuncu.y))
       .slice(0, 3);
     for (const k of konusan) if (k.x > 0 && k.x < G && k.y > 0 && k.y < Y) balon(k.x, k.y - 11, k.laf, k.gidiyor);
@@ -356,7 +397,7 @@
     c.textBaseline = 'alphabetic';
     c.fillStyle = KAG;
     c.textAlign = 'left';
-    c.fillText('sosyal pil', 5, 10);
+    c.fillText('sessizlik', 5, 10);
     for (let i = 0; i < 3; i++) dikdortgen(55 + i * 9, 3, 7, 7, i < oyuncu.pil ? KOR : CIZGI);
     c.fillStyle = KAG;
     c.fillText('kulaklık', 94, 10);
@@ -451,12 +492,12 @@
   tuval.addEventListener('pointercancel', birak);
 
   // Konsolu açanlara
-  window.kadim = {
+  window.kadim = Object.assign(window.kadim || {}, {
     tanriModu() {
       tanri = !tanri;
       return tanri ? 'Tanrı modu açık. Kayda geçti.' : 'Kapandı. Yine kayda geçti.';
     },
-  };
+  });
 
   if (matchMedia('(pointer:coarse)').matches) {
     perdeNot.textContent = 'parmağını sürükle: kaç · Kulaklık düğmesi: duyma';

@@ -1,5 +1,10 @@
 <!doctype html>
 <!-- Kaynağa baktın. Yüzüne bakmaktan kolay, değil mi. -->
+<!--
+     ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·
+     kat -7'den kat -31'e merdiven yok. asansör de yok.
+     TODO(selim): /sessizoda bağlantısını kaldır. kaldırdım. yorum kaldı. tamam.
+-->
 <html lang="tr">
 <head>
 <meta charset="utf-8">
@@ -7,20 +12,27 @@
 <title>selimkadiryaar31 — ayin sitesi</title>
 <meta name="description" content="Çağlar boyu hor görüldü. Tek kelime etmedi. Dua et, etmesin.">
 <meta name="robots" content="noindex, nofollow">
+<meta name="kat" content="-31 son değil">
 <meta name="theme-color" content="#0a0807">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%230a0807'/%3E%3Cpath fill='%23f23a1d' d='M1 4h2v8H1zM4 4h2v8H4zM7 4h2v8H7zM10 4h2v8h-2zM13 4h2v8h-2z'/%3E%3C/svg%3E">
 <link rel="preload" href="assets/fonts/Jacquard12-normal-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css">
 <script>document.documentElement.className='js esikte giriste'</script>
-<noscript><style>#ayin,#oyun,#mumlar{display:none}</style></noscript>
+<noscript><style>body>*{display:none!important}body::before{content:"Bu kapı betik olmadan açılmaz.";display:block;padding:40vh 18px 0;text-align:center}</style></noscript>
 </head>
 <body>
 
 <div class="esik" id="esik" role="dialog" aria-modal="true" aria-label="Eşik">
   <canvas id="esik-muhur" width="155" height="155" aria-hidden="true"></canvas>
   <p class="esik-metin" id="esik-metin"></p>
-  <button type="button" class="esik-tut" id="esik-tut">basılı tut</button>
-  <button type="button" class="esik-sessiz" id="esik-sessiz">sessiz gir</button>
+  <form class="esik-form" id="esik-form" autocomplete="off">
+    <label class="gizli" for="esik-parola">Parola</label>
+    <input id="esik-parola" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="parola">
+    <button type="submit" class="esik-soyle">söyle</button>
+  </form>
+  <p class="esik-cevap" id="esik-cevap" aria-live="polite"></p>
+  <button type="button" class="esik-tut" id="esik-tut" hidden>basılı tut</button>
+  <button type="button" class="esik-sessiz" id="esik-sessiz" hidden>sessiz gir</button>
   <p class="esik-not">ses · ani görüntü · yanıp sönen ışık</p>
 </div>
 
@@ -101,7 +113,7 @@
     <ol class="kayit-liste">
       <li class="kayit">
         <p class="kayit-kaynak">Kil tablet · Ur · MÖ 2600</p>
-        <p class="kayit-eski">Kapıdan girer, selam vermez. Kâtipler onu kötü bilir.</p>
+        <p class="kayit-eski" data-sonra="Kapıdan girdin, selam vermedin. Kâtipler seni kötü bilir.">Kapıdan girer, selam vermez. Kâtipler onu kötü bilir.</p>
         <p class="kayit-yeni">Tabletin arkasında başka bir el, tek satır: «Bugün selam verdi.» O kâtibin elinden çıkan son tablet.</p>
       </li>
       <li class="kayit">
@@ -111,7 +123,7 @@
       </li>
       <li class="kayit">
         <p class="kayit-kaynak">Mektup · Ugarit · MÖ 1190</p>
-        <p class="kayit-eski">Yedi kez yazdık. Görüyor, cevap vermiyor. Bir kere de cevap versin.</p>
+        <p class="kayit-eski" data-sonra="Yedi kez yazdık. Görüyor, cevap vermiyor. Sekizinciyi {ad} yazsın dediler.">Yedi kez yazdık. Görüyor, cevap vermiyor. Bir kere de cevap versin.</p>
         <p class="kayit-yeni">Verdi. Bilinen tek cevabıdır. Şehir o hafta yandı. Bir sonraki mektup fırında bulundu; pişirilmeye vakit kalmamış.</p>
       </li>
       <li class="kayit">
@@ -137,7 +149,7 @@
       <li class="kayit kayit-son">
         <p class="kayit-kaynak">Erişim kaydı · bu sayfa · bugün <span id="kayit-saat">−</span></p>
         <p class="kayit-eski">Biri kayıtları okuyor. <span id="kayit-sure">0</span> saniyedir burada. Selam vermedi.</p>
-        <p class="kayit-yeni">Bu kaydın sonu henüz yazılmadı.</p>
+        <p class="kayit-yeni">Bu kaydın sonu henüz yazılmadı. Öncekiler <span class="kod">defter</span> altında.</p>
       </li>
     </ol>
   </div>
@@ -172,13 +184,14 @@
         <a href="assets/suret/renkli/build.jpg"><img src="assets/suret/build.png" width="340" height="502" loading="lazy" alt="Yandan, gözlüklü bir yüz. Eli yüzünün üstünde."></a>
         <figcaption><span class="levha-no">Levha V · ağıt ikonası</span><b>Build Kırıldı.</b> Üçüncü gece. Derleyici «satır 31'de hata» diyor. Dosya otuz satır. Otuz birinci satırı kimin yazdığı belli değil.</figcaption>
       </figure>
+      <div class="duvar-yazi" aria-hidden="true">burada levha yok<br>kazınmış: <span class="kod">defter</span></div>
       <figure class="levha">
         <a href="assets/suret/renkli/el.jpg"><img src="assets/suret/el.png" width="340" height="340" loading="lazy" alt="Beş parmaklı bir elin bileğine oturtulmuş, gülümseyen bir yüz. Arkada bir termos."></a>
         <figcaption><span class="levha-no">Levha VI · sunak taşı</span><b>Beş Parmak Sureti.</b> Müritlerin selamı buradan gelir: beş parmak, beş bit. Hepsi açıkken el 31'i gösterir. Arkadaki termos hâlâ sıcak.</figcaption>
       </figure>
       <figure class="levha" data-hedef>
         <a href="assets/suret/renkli/goruldu.jpg"><img src="assets/suret/goruldu.png" width="340" height="386" loading="lazy" alt="Lokantada, gözlüklü bir yüz. Kameraya boş boş bakıyor."></a>
-        <figcaption><span class="levha-no">Levha VII · geçen salı</span><b>Görüldü.</b> Kendisine «akşam geliyor musun?» diye sorulduktan dokuz saniye sonra. Soran kişi hâlâ bekliyor. Aynı masada.</figcaption>
+        <figcaption><span class="levha-no">Levha VII · geçen salı</span><b>Görüldü.</b> <span data-sonra="Kendisine «akşam geliyor musun?» diye sorulduktan dokuz saniye sonra. Soran kişi hâlâ bekliyor. Senin masanda.">Kendisine «akşam geliyor musun?» diye sorulduktan dokuz saniye sonra. Soran kişi hâlâ bekliyor. Aynı masada.</span></figcaption>
       </figure>
       <figure class="levha">
         <a href="assets/suret/renkli/dil.jpg"><img src="assets/suret/dil.png" width="340" height="428" loading="lazy" alt="Sakallı, gözlüklü bir yüz, dili çok uzamış. Tişörtünde BLESSINGS yazıyor."></a>
@@ -218,7 +231,7 @@
       <li><time>1981</time><h3>Polybius</h3><p>Portland. Salonlara bir kabin kondu, birkaç hafta sonra alındı. Oynayanlar kâbus gördü, sonra unuttu. Kabini gören başka kimse yok. Buna şehir efsanesi deniyor. Bunu diyen de o.</p><span class="etiket">yok</span></li>
       <li><time>1983</time><h3>Alamogordo Çölü</h3><p>Beğenmediği bir partiyi gece çöle gömdü. Göbeklitepe'den kalma alışkanlık. 2014'te kazdılar, kartuşlar çıktı. Daha derine inmediler.</p><span class="etiket">gömüldü</span></li>
       <li><time>yakın geçmiş</time><h3>Bilgisayar Mühendisliği</h3><p>Diploma gerekiyormuş, gidip okudu. Dört yıl arka sırada oturdu. Algoritmadan CC aldı, itiraz etmedi. Sınıf fotoğraflarına bak. Seninle de okumuş olabilir.</p><span class="etiket">mezun</span></li>
-      <li class="suruyor"><time>bugün</time><h3><i>(adı yok)</i></h3><p>Motoru bitti. Kayıt noktası yok. Çıkış menüsü yazılmadı. Şu an oynuyorsun.</p><span class="etiket">yapımda</span></li>
+      <li class="suruyor"><time>bugün</time><h3><i>(adı yok)</i></h3><p data-sonra="Motoru bitti. Kayıt noktası yok. Çıkış menüsü yazılmadı. Şu an oynuyorsun. Kaybediyorsun.">Motoru bitti. Kayıt noktası yok. Çıkış menüsü yazılmadı. Şu an oynuyorsun.</p><span class="etiket">yapımda</span></li>
     </ol>
     <p class="gizli-yazi" aria-hidden="true">kayıt noktan yok</p>
   </div>
@@ -231,14 +244,16 @@
     <div>
       <p class="bolum-no">kat −4</p>
       <h2 id="yasaklar-baslik" class="baslik">Yasaklar</h2>
-      <p class="giris-yazi">Otuz bir yasak vardı. Beşi okunabiliyor. Kalanını yazan el durmuş.</p>
+      <p class="giris-yazi">Otuz bir yasak vardı. Altısı okunabiliyor. Kalanını yazan el durmuş.</p>
       <ol class="emirler">
         <li>Ona yazma. Yazdıysan silme; çoktan okudu.</li>
         <li>«yazıyor…» görürsen ekranı kapatma. O yine de yazmış olur; sen görmemiş olursun.</li>
         <li id="yasak-uc">Gece biri adını seslenirse cevap verme. Sesi tanısan da. Özellikle tanırsan.</li>
         <li>Çevrimiçi olduğunu görürsen kıpırdama. 3,1 saniye sürer.</li>
-        <li>Görüldü, cevaptır. Başka cevap isteme.</li>
+        <li data-sonra="Görüldü, cevaptır. Sen de öğrendin.">Görüldü, cevaptır. Başka cevap isteme.</li>
+        <li class="kazinmis">Köşeli parantez içinde bir kelime görürsen adres çubuğuna, <span data-adres>selimkadiryaar31.online</span>/ sonrasına yazma. <span class="kod">kapı</span> gibi. Sonra «söylemediler» deme.</li>
       </ol>
+      <!-- yasak XXXI: bu satırı okuma. -->
       <p class="gizli-yazi" aria-hidden="true">üçüncüyü unutacaksın</p>
     </div>
     <aside class="otuzbir-neden" aria-labelledby="neden-baslik">
@@ -402,6 +417,7 @@
       <p>Bütün mumlar aynı anda yalnızca bir kez yanacak: <b>19 Ocak 2038, 03.14.07 UTC</b>. Bir saniye sonra sayaç taşacak ve 32 bit saatler kendini 13 Aralık 1901 sanacak. Bu kısım uydurma değil. Müritler buna Büyük Taşma der.</p>
       <p class="sayac" aria-live="off"><span id="sayac">−</span></p>
       <p id="kehanet-son">Çağlar boyu ona yazılan bütün mesajlar okundu. Hiçbiri cevaplanmadı. O saniye kuyruk taşacak. Hepsine aynı anda cevap yazacak.</p>
+      <p class="secince">Kuyruğu görmek isteyen, seçtiğini okur: <span class="kod">2038</span></p>
     </div>
   </div>
 </section>
@@ -411,7 +427,7 @@
 <section class="gece bolum bugun" id="bugun" data-kat aria-label="Bugün">
   <div class="sayfa bugun-duzen">
     <div class="vaaz">
-      <p class="bolum-no">kat −31 · son</p>
+      <p class="bolum-no">kat −31 · <a class="gizli-bag" href="defter" data-kod="defter" tabindex="-1">son</a></p>
       <p class="vaaz-soru">Her çağ ona aynı şeyi sordu: <em>Neden konuşmuyorsun?</em></p>
       <p class="vaaz-soru">Hiçbir çağ şunu sormadı: <em>Konuşursa ne olur?</em></p>
       <p>Oyunlarda bir hile vardır. Uçurumun kenarından çıktıktan sonra bile zıplayabilirsin; geliştirici sana gizlice yüz milisaniye verir. Canın son çentikteyken sayıları senin lehine eğer. Düşman ıskalasın diye vuruş kutusunu bir piksel daraltır. Sana söylemez. Söylese bozulur.</p>
@@ -439,7 +455,13 @@
   <p class="son-kucuk">O'nun hakkında yazılan her şey uydurmadır. 31 sayısı, 2038 ve tarihteki tuhaflıklar gerçektir.</p>
   <p class="son-kucuk">Adın, gelişlerin ve cevabın yalnızca bu tarayıcıda durur. Kamera görüntüsü hiçbir yere gitmez.</p>
   <p class="son-kucuk"><button type="button" class="sil" id="kaydi-sil">kaydımı sil</button></p>
+  <a class="sekme-kapi" href="tty" data-kod="tty">Sekmeyle geziyorsun. Fare kullanmayan biri. Seni tanıyoruz. Buradan gir.</a>
 </footer>
+
+<template id="silinen">
+  <!-- bunu da silmeyi unuttum. sen de görmedin. -->
+  <p>01011 01111 10010 01001 00100 01111 10010 · A=00001 · beş bit · 11111 onun</p>
+</template>
 
 <dialog id="asli" aria-label="Levhanın aslı">
   <img id="asli-resim" alt="">
@@ -470,11 +492,13 @@
 
 <script src="js/portre-veri.js"></script>
 <script src="js/ortak.js"></script>
+<script src="js/sifre.js"></script>
 <script src="js/ses.js"></script>
 <script src="js/varlik.js"></script>
 <script src="js/esik.js"></script>
 <script src="js/sahne.js"></script>
 <script src="js/site.js"></script>
 <script src="js/oyun.js"></script>
+<script src="js/fark.js"></script>
 </body>
 </html>

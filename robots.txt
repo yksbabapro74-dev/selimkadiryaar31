@@ -1,0 +1,7 @@
+# Bu dosyayı makineler okur. Sen makine misin?
+User-agent: *
+Disallow: /
+
+# Özellikle buralara bakılmasın.
+Disallow: /defter
+Disallow: /sessizoda

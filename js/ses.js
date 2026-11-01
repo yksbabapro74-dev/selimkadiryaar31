@@ -450,6 +450,21 @@ window.Ses = (function () {
     cigilik: canli((ses) => motor.cigilik(ses === undefined ? 0.9 : ses)),
     vurus: canli((guc) => motor.vurus(guc || 0.8)),
     kalp: canli(kalp),
+    // Tarayıcının kendi sesi. Kalın, yavaş, Türkçe biliyorsa Türkçe. Yoksa hiç konuşmaz.
+    soyle(metin, hiz) {
+      if (!acik || !window.speechSynthesis) return;
+      try {
+        const u = new SpeechSynthesisUtterance(metin);
+        const v = speechSynthesis.getVoices().find((x) => /^tr/i.test(x.lang));
+        if (v) u.voice = v;
+        u.lang = 'tr-TR';
+        u.rate = hiz || 0.62;
+        u.pitch = 0.05;
+        u.volume = 1;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+      } catch (e) { /* konuşamıyorsa susar */ }
+    },
     sus: canli((sn) => motor.sus(sn || 0.05)),
     don: canli((sn) => motor.don(sn || 2)),
     // Çevrimdışı ölçüm için

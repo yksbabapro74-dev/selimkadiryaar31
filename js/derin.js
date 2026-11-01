@@ -585,7 +585,7 @@ aX1w0gf/TzV3mNq8YcRu2oEfGd5sLk1pWbH7xIuJt9aZ0vKe6MrD4yUoQf3nSgCj
     'yedek_1190.tar.gz': () => dosyaAc('yedek_1190.tar.gz', hexdump('ustar  ugarit/mektup_0008.txt\0\0\0firinda kaldi. pisirilmedi.\0\0\0kat-23/adresin_sonu=pazar\0\0\0tikla diye yazmadim. oku diye yazdim.\0', 1190), true),
     '31.jpg': () => {
       dosyaAc('31.jpg', 'indiriliyor… 31 kB/s');
-      dosyaResim.src = 'assets/suret/bugun.jpg';
+      window.Sifre.resim('suret/bugun.jpg').then((u) => { dosyaResim.src = u; }).catch(() => {});
       dosyaResim.alt = 'Bir yüz, satır satır iniyor.';
       dosyaResim.hidden = false;
       if (azalt) {

@@ -30,18 +30,7 @@
 
   function coz(b64, k) {
     const girdi = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    const anahtar = S.ozet(S.utf8('anahtar:' + V.tuz + k));
-    const blok = new Uint8Array(36);
-    blok.set(anahtar, 0);
-    const cik = new Uint8Array(girdi.length);
-    for (let i = 0, sayac = 0; i < girdi.length; sayac++) {
-      blok[32] = sayac >>> 24;
-      blok[33] = (sayac >>> 16) & 255;
-      blok[34] = (sayac >>> 8) & 255;
-      blok[35] = sayac & 255;
-      const akis = S.ozet(blok);
-      for (let j = 0; j < 32 && i < girdi.length; j++, i++) cik[i] = girdi[i] ^ akis[j];
-    }
+    const cik = S.akis(girdi, S.ozet(S.utf8('anahtar:' + V.tuz + k)));
     return JSON.parse(new TextDecoder().decode(cik));
   }
 
@@ -53,24 +42,14 @@
     return l;
   }
 
-  // Şifreli görsel: indirilir, burada çözülür, sekmede kalır. Kodu bilmeyen dosyanın ne olduğunu bilemez.
+  // Şifreli görsel: indirilir, burada çözülür, sekmede kalır. Anahtarı hem parolaya hem bu katın koduna bağlıdır.
   async function gorselCoz(ad) {
-    const dosyaAd = S.hex(S.ozet(S.utf8('dosya:' + V.tuz + kod + ':' + ad))).slice(0, 20) + '.bin';
-    const r = await fetch('assets/g/' + dosyaAd);
+    const a = S.anahtar();
+    if (!a) throw new Error('anahtar yok');
+    const ek = `${V.tuz}${a}:${kod}:${ad}`;
+    const r = await fetch(`assets/g/${S.hex(S.ozet(S.utf8('dosya:' + ek))).slice(0, 20)}.bin`);
     if (!r.ok) throw new Error('görsel yok');
-    const girdi = new Uint8Array(await r.arrayBuffer());
-    const anahtar = S.ozet(S.utf8('gorsel:' + V.tuz + kod + ':' + ad));
-    const blok = new Uint8Array(36);
-    blok.set(anahtar, 0);
-    const cik = new Uint8Array(girdi.length);
-    for (let i = 0, sayac = 0; i < girdi.length; sayac++) {
-      blok[32] = sayac >>> 24;
-      blok[33] = (sayac >>> 16) & 255;
-      blok[34] = (sayac >>> 8) & 255;
-      blok[35] = sayac & 255;
-      const akis = S.ozet(blok);
-      for (let j = 0; j < 32 && i < girdi.length; j++, i++) cik[i] = girdi[i] ^ akis[j];
-    }
+    const cik = S.akis(new Uint8Array(await r.arrayBuffer()), S.ozet(S.utf8('gorsel:' + ek)));
     return URL.createObjectURL(new Blob([cik], { type: 'image/jpeg' }));
   }
   // <figure data-gorsel="ad" data-soz="...">: kapalı gelir. Bakmak senin kararın.
@@ -105,7 +84,6 @@
     });
   }
 
-  let portreSoz = null;
   const G = {
     O, Ses, S, kod, kat, depo, bag,
     kok: kokAdres,
@@ -143,19 +121,7 @@
       setTimeout(() => t.remove(), 6200);
       return l.length;
     },
-    // Yüz gerekirse sonradan yüklenir.
-    portre() {
-      if (!portreSoz) {
-        portreSoz = new Promise((c, r) => {
-          const b = document.createElement('script');
-          b.src = 'js/portre-veri.js';
-          b.onload = () => O.portreResmi().then(c, r);
-          b.onerror = r;
-          document.head.appendChild(b);
-        });
-      }
-      return portreSoz;
-    },
+    portre: () => O.portreResmi(),
     // Tam ekran bir an: azaltılmış harekette yalnızca çağırana döner.
     async yuz(ms, ses) {
       if (O.azalt) return;

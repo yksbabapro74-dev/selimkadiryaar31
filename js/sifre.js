@@ -67,19 +67,40 @@ window.Sifre = (function () {
 
   const TUZ = 'kadim.31.kapi:';
   const OZET = '49ad255c65bbe3a5d32d5e9fd6d18f51bb5dd411bcf985cc74cd10e3322226ca';
+  const RESIM_TUZ = 'kadim.31.resim:';
+
+  // Görsellerin anahtarı parolanın kendisinden çıkar, hiçbir dosyada yazmaz.
+  // Parolayı bilmeyen dosyaları indirse de açamaz; kapıdan önce tek bir görsel bile istenmez.
+  let resimAnahtar = '';
+  try { resimAnahtar = sessionStorage.getItem('kadim.resim') || ''; } catch (e) { /* gizli sekme */ }
+  const bekleyenler = [];
+  const anahtar = () => resimAnahtar;
+  function anahtarBekle() {
+    if (resimAnahtar) return Promise.resolve(resimAnahtar);
+    if (bellek) return Promise.reject(new Error('anahtar yok'));
+    return new Promise((coz, red) => bekleyenler.push({ coz, red }));
+  }
 
   let bellek = false;
   function gecti() {
-    try { return sessionStorage.getItem('kadim.kapi') === OZET.slice(0, 16) || bellek; } catch (e) { return bellek; }
+    if (bellek) return true;
+    try { return sessionStorage.getItem('kadim.kapi') === OZET.slice(0, 16) && !!resimAnahtar; } catch (e) { return false; }
   }
+  // Yalnızca yerel geliştirme (?sahne=). Anahtar vermez: anahtar yoksa görseller de gelmez, sahne yine çalışır.
   function gecir() {
     bellek = true;
-    try { sessionStorage.setItem('kadim.kapi', OZET.slice(0, 16)); } catch (e) { /* gizli sekme */ }
+    if (!resimAnahtar) bekleyenler.splice(0).forEach((b) => b.red(new Error('anahtar yok')));
   }
   function dene(m) {
-    const dogru = hex(ozet(utf8(TUZ + sade(m).replace(/[^a-z0-9]/g, '')))) === OZET;
-    if (dogru) {
-      gecir();
+    const temiz = sade(m).replace(/[^a-z0-9]/g, '');
+    if (hex(ozet(utf8(TUZ + temiz))) === OZET) {
+      bellek = true;
+      resimAnahtar = hex(ozet(utf8(RESIM_TUZ + temiz)));
+      try {
+        sessionStorage.setItem('kadim.kapi', OZET.slice(0, 16));
+        sessionStorage.setItem('kadim.resim', resimAnahtar);
+      } catch (e) { /* gizli sekme */ }
+      bekleyenler.splice(0).forEach((b) => b.coz(resimAnahtar));
       return true;
     }
     const n = (parseInt(depo.al('yanlis'), 10) || 0) + 1;
@@ -100,5 +121,58 @@ window.Sifre = (function () {
     return n <= SOZ.length ? SOZ[n - 1] : `${n}. deneme. Hepsi kayıtta.`;
   }
 
-  return { ozet, utf8, hex, sade, kodSade, dene, gecti, gecir, yanlisSoz };
+  // Akış şifresi: her 32 bayt için sha256(anahtar + sayaç). Aynı işlem hem şifreler hem çözer.
+  function akis(girdi, anahtarBayt) {
+    const blok = new Uint8Array(36);
+    blok.set(anahtarBayt, 0);
+    const cik = new Uint8Array(girdi.length);
+    for (let i = 0, sayac = 0; i < girdi.length; sayac++) {
+      blok[32] = sayac >>> 24;
+      blok[33] = (sayac >>> 16) & 255;
+      blok[34] = (sayac >>> 8) & 255;
+      blok[35] = sayac & 255;
+      const a = ozet(blok);
+      for (let j = 0; j < 32 && i < girdi.length; j++, i++) cik[i] = girdi[i] ^ a[j];
+    }
+    return cik;
+  }
+
+  // Görselin adı da anahtardan çıkar: parola olmadan hangi dosyanın ne olduğu bile bilinmez.
+  const resimler = new Map();
+  function resim(yol) {
+    if (!resimAnahtar) return Promise.reject(new Error('anahtar yok'));
+    if (resimler.has(yol)) return resimler.get(yol);
+    const a = resimAnahtar;
+    const ad = hex(ozet(utf8(`dosya:${a}:${yol}`))).slice(0, 20);
+    const tur = yol.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    const soz = fetch(`assets/r/${ad}.bin`).then((r) => {
+      if (!r.ok) throw new Error('görsel yok');
+      return r.arrayBuffer();
+    }).then((b) => {
+      const cik = akis(new Uint8Array(b), ozet(utf8(`resim:${a}:${yol}`)));
+      return URL.createObjectURL(new Blob([cik], { type: tur }));
+    });
+    soz.catch(() => resimler.delete(yol));
+    resimler.set(yol, soz);
+    return soz;
+  }
+
+  // <img data-resim="suret/x.png">: src'si yoktur, anahtar gelince doldurulur.
+  function resimleriKur(kok) {
+    const liste = Array.from((kok || document).querySelectorAll('img[data-resim]'));
+    if (!liste.length) return;
+    anahtarBekle().then(async () => {
+      for (const im of liste) {
+        const yol = im.dataset.resim;
+        try {
+          const u = await resim(yol);
+          if (im.dataset.resim === yol) im.src = u;
+        } catch (e) { /* gelmediyse boş kalır */ }
+      }
+    }, () => {});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => resimleriKur());
+  else resimleriKur();
+
+  return { ozet, utf8, hex, sade, kodSade, dene, gecti, gecir, yanlisSoz, anahtar, anahtarBekle, akis, resim, resimleriKur };
 })();

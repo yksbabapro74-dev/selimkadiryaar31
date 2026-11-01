@@ -23,7 +23,11 @@
   const kasa = document.getElementById('oyun-kasa');
 
   const kafa = new Image();
-  kafa.src = 'assets/suret/kafa.png';
+  window.Sifre.anahtarBekle().then(() => window.Sifre.resim('suret/kafa.png')).then((u) => { kafa.src = u; }).catch(() => {});
+  const perdeYaz = (yol) => {
+    perdeResim.dataset.resim = yol;
+    window.Sifre.resim(yol).then((u) => { if (perdeResim.dataset.resim === yol) perdeResim.src = u; }).catch(() => {});
+  };
 
   const CAGLAR = [
     {
@@ -267,7 +271,7 @@
     }
     perdeResim.hidden = false;
     if (kazandi) {
-      perdeResim.src = 'assets/suret/goruldu.png';
+      perdeYaz('suret/goruldu.png');
       perdeBaslik.textContent = 'Sabah oldu.';
       perdeMetin.innerHTML = tanri
         ? 'Kimseye cevap vermedin. Yarın gece yine gelecekler.'
@@ -275,7 +279,7 @@
       perdeNot.textContent = tanri ? '31 saniye · tanrı moduyla · rekora yazılmadı' : `31 saniye · ${['hiç', 'bir kez', 'iki kez'][3 - oyuncu.pil]} seslendiler, duydun`;
       Ses.can(130.81, 12, 0.6);
     } else {
-      perdeResim.src = 'assets/suret/temas.png';
+      perdeYaz('suret/temas.png');
       perdeBaslik.textContent = 'Cevap verdin.';
       Ses.cigilik(0.55);
       perdeMetin.textContent = KAYIP[(Math.random() * KAYIP.length) | 0];

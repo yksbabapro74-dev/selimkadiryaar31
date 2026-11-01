@@ -231,17 +231,18 @@ window.Ortak = (function () {
     return h;
   }
 
-  // Portre gömülü bir data URI'dir: file:// altında açılsa da tuval kirlenmez.
+  // Portre de şifreli: parola girilene kadar bu söz bekler, kapıdan önce dosya bile istenmez.
   let portreSoz = null;
   function portreResmi() {
     if (!portreSoz) {
-      // Gizli katlarda portre verisi sonradan yüklenir; ortak.js onu burada bekler.
-      portreSoz = new Promise((coz, red) => {
+      const S = window.Sifre;
+      portreSoz = S.anahtarBekle().then(() => S.resim('suret/portre.jpg')).then((u) => new Promise((coz, red) => {
         const r = new Image();
         r.onload = () => coz(r);
         r.onerror = red;
-        r.src = window.PORTRE_VERI.src;
-      });
+        r.src = u;
+      }));
+      portreSoz.catch(() => { portreSoz = null; });
     }
     return portreSoz;
   }

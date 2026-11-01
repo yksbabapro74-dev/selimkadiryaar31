@@ -55,7 +55,9 @@ window.Arkanda = (function () {
       f.drawImage(r, (F_G - g) / 2, F_Y - y, g, y);
       basOran = { x: ((F_G - g) / 2 + g * 0.588) / F_G, y: (F_Y - y + y * 0.111) / F_Y };
     };
-    r.src = 'assets/kamera/figur.png';
+    // Şifreli: parola girilene kadar istenmez bile.
+    const S = window.Sifre;
+    S.anahtarBekle().then(() => S.resim('kamera/figur.png')).then((u) => { r.src = u; }).catch(() => {});
   })();
   const fCik = document.createElement('canvas');
   fCik.width = W;
@@ -109,13 +111,13 @@ window.Arkanda = (function () {
   }
 
   // ---------- kamera yolu: gözünü kırpma ----------
-  const TOPLAM = 24000, DONMA = 3100;
+  const TOPLAM = 12000, DONMA = 1800;
   async function gozSahnesi(ayar) {
     B.ayiriciAc();
     const hedefYuz = yuzKutu();
     const yan = hedefYuz && hedefYuz.x + hedefYuz.g / 2 > W / 2 ? -1 : 1;
     let s = ayar.uzaklik > 0.3 ? 0 : ayar.uzaklik > 0.1 ? 1 : 2;
-    const sinir = 6 - s;
+    const sinir = Math.ceil((6 - s) / 2);
     let kirp = 0, bitti = false, donuk = false;
     let yer = asamaYer(s, yan, hedefYuz || { x: W / 2 - 30, y: 40, g: 60, h: 80 });
     const sabitYuz = hedefYuz || { x: W / 2 - 30, y: 40, g: 60, h: 80 };
@@ -127,8 +129,9 @@ window.Arkanda = (function () {
       bitti = true;
       sonuc = r;
     };
+    // Sahne kısa: her kırpışta iki adım gelir, oran aynı kalır.
     function ilerle() {
-      s += 1;
+      s += 2;
       if (s > 5) {
         bitir('yakalandi');
         return;
@@ -139,14 +142,14 @@ window.Arkanda = (function () {
       // Görmediğin an yürür; duyarsın. Son adımda kokusunu alıyor.
       const m = 2.4 - s * 0.42;
       Ses.adimlar(yan * m * 0.5, m, 0.34, 1);
-      if (s === 4) Ses.kayit('kumas2', { x: yan * 0.4, z: 0.35, ses: 0.55 });
-      if (s === 5) Ses.kayit('kokla', { x: yan * 0.16, z: 0.14, ses: 0.72 });
+      if (s === 3 || s === 4) Ses.kayit('kumas2', { x: yan * 0.4, z: 0.35, ses: 0.55 });
+      if (s >= 4) Ses.kayit('kokla', { x: yan * 0.16, z: 0.14, ses: 0.72 });
     }
     let son = 0, sonUzak = 0;
     const baslangic = performance.now();
     await new Promise((coz) => {
       const k1 = B.dinle('kirpti', () => {
-        if (bitti || performance.now() - baslangic < 2600) return;
+        if (bitti || performance.now() - baslangic < 1500) return;
         kirp += 1;
         ilerle();
         sayac.textContent = `kırpma: ${kirp}/${sinir}`;
@@ -174,7 +177,7 @@ window.Arkanda = (function () {
           Sn.kalpAt(0);
         }
         // Yüzünü çektin ya da başını çevirdin: bakmıyorsun.
-        if (g > 3400 && (!B.d.bakiyor && !B.d.gozKapali) && n - sonUzak > 1700) {
+        if (g > 2000 && (!B.d.bakiyor && !B.d.gozKapali) && n - sonUzak > 1700) {
           sonUzak = n;
           ilerle();
         }
@@ -206,7 +209,7 @@ window.Arkanda = (function () {
         if (bitti) return;
         yazi.textContent = 'gözünü kırpma.';
         sayac.textContent = `kırpma: 0/${sinir}`;
-      }, azalt ? 300 : 2200);
+      }, azalt ? 300 : 1200);
     });
     B.ayiriciKapat();
     Sn.kalpAt(0);
@@ -232,7 +235,7 @@ window.Arkanda = (function () {
       { x: 0.63, tepe: 0.04, boy: 1.06 },
       { x: 0.68, tepe: -0.08, boy: 1.5 },
     ];
-    const SURE = 18600, ASAMA = (SURE - 3100) / ADIM.length;
+    const SURE = 9600, ASAMA = (SURE - DONMA) / ADIM.length;
     let onceki = 0, parazitBit = 0;
     (function k() {
       if (bitti) return;
@@ -270,7 +273,7 @@ window.Arkanda = (function () {
       c.closePath();
       c.fill();
     })();
-    await bekle(1800);
+    await bekle(1000);
     yazi.textContent = Sn.dokunmatik ? 'kıpırdama. telefonu da.' : 'kıpırdama.';
     await new Promise((coz) => {
       const basAn = performance.now();
@@ -300,8 +303,8 @@ window.Arkanda = (function () {
         donuk = true;
         Ses.nefesKes();
         Sn.kalpAt(0);
-      }, 15500);
-      const bitZ = setTimeout(() => bitir('gecti'), 18600);
+      }, SURE - DONMA);
+      const bitZ = setTimeout(() => bitir('gecti'), SURE);
       const bk = setInterval(() => {
         if (!bitti) return;
         clearInterval(bk);
@@ -321,15 +324,6 @@ window.Arkanda = (function () {
   async function yuz() {
     if (azalt) return;
     try {
-      if (!window.PORTRE_VERI) {
-        await new Promise((c1, r) => {
-          const b = document.createElement('script');
-          b.src = 'js/portre-veri.js';
-          b.onload = c1;
-          b.onerror = r;
-          document.head.appendChild(b);
-        });
-      }
       const r = await O.portreResmi();
       const e = document.createElement('canvas');
       e.id = 'a-yuz';
@@ -409,7 +403,7 @@ window.Arkanda = (function () {
       let son = 0;
       (function d(z) {
         const n = performance.now();
-        if (bitti || n - bas > 42000 || (n - bas > 3000 && !yon)) {
+        if (bitti || n - bas > 18000 || (n - bas > 3000 && !yon)) {
           coz();
           return;
         }
@@ -434,7 +428,7 @@ window.Arkanda = (function () {
           parilti(c, { x, tepe, boy, g: g2 }, n);
           if (Math.abs(fark) < 12) {
             if (!gorulen) gorulen = n;
-            if (n - gorulen > 2900) bitti = true;
+            if (n - gorulen > 1500) bitti = true;
           } else gorulen = 0;
         }
       })(0);
@@ -447,7 +441,7 @@ window.Arkanda = (function () {
     Ses.parazit(0.3, 0.08);
     Sn.titret(120);
     yazi.textContent = gorulen ? 'Gitmemiş.' : '';
-    await bekle(gorulen ? 2600 : 300);
+    await bekle(gorulen ? 1500 : 300);
     return !!gorulen;
   }
 
@@ -496,10 +490,10 @@ window.Arkanda = (function () {
     saat.textContent = depo.al('odasaat') || '04:08';
     O.gerilim.sus = true;
     Ses.kalp(0);
-    Ses.sus(3.1);
+    Ses.sus(1.2);
     Ses.cinlama(0.9);
     if (B.acikMi() && B.ciz(c, W, H)) B.griIsle(c, W, H);
-    await bekle(3100);
+    await bekle(1200);
     Ses.nefesle(7);
     Mik.bagla();
     const kameraVar = B.hazirMi() && B.d.yuzVar;
@@ -516,20 +510,20 @@ window.Arkanda = (function () {
       c.fillRect(0, 0, W, H);
       await yuz();
       yazi.textContent = kameraVar ? 'Kırptın.' : 'Kıpırdadın.';
-      await bekle(2600);
+      await bekle(1500);
     } else if (r.sonuc === 'kapatti') {
       c.fillStyle = '#000';
       c.fillRect(0, 0, W, H);
       yazi.textContent = 'Kapattın. Peki.';
-      await bekle(2600);
+      await bekle(1500);
     } else if (r.sonuc === 'gecti') {
-      await bekle(1300);
+      await bekle(700);
       c.fillStyle = '#000';
       c.fillRect(0, 0, W, H);
       saat.textContent = '04:12';
       yazi.textContent = 'Gitti.';
       Ses.parazit(0.3, 0.07);
-      await bekle(2600);
+      await bekle(1500);
     }
     yazi.textContent = '';
     depo.yaz('sonuc', JSON.stringify({ kipirdadi, kirpma: r.kirp || 0, kacti: r.sonuc === 'kacti' }));
@@ -538,7 +532,7 @@ window.Arkanda = (function () {
     O.gerilim.sus = false;
     Ses.don(4);
     Ses.ortamKis(0.6);
-    await Y.gec('final', 1300, 700);
+    await Y.gec('final', 800, 400);
   }
 
   return { basla, Mik };

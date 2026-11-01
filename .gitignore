@@ -3,5 +3,5 @@ tools/gizli_kaynak/
 GIZLI.md
 DAVET.md
 __pycache__/
-# Orijinal fotoğraflar yayına gitmez; site yalnızca assets/suret kullanır.
+# Orijinal fotoğraflar yayına gitmez; görseller tools/gizli_kaynak/acik altında durur, yayına şifreli çıkar.
 images/

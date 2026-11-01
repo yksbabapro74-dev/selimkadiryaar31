@@ -8,7 +8,7 @@
   const bekle = Y.bekle;
 
   // 1921 fotoğrafında arka sıradaki boş yüz. Fotoğrafa göre kesir.
-  const FOTO = { src: 'assets/foto/f1921.jpg', yuz: { x: 0.658, y: 0.313, g: 0.03 } };
+  const FOTO = { src: 'foto/f1921.jpg', yuz: { x: 0.658, y: 0.313, g: 0.03 } };
   const OLCEK = 2;
   // Bozuk müzik kutusu. Jenerikte «Müzik: yok» yazarken çalar.
   const KUTU = [[81, 1], [76, 1], [72, 1], [75, 2], [71, 1], [74, 1], [77, 1], [76, 2], [0, 1], [72, 1], [69, 1], [68, 2], [71, 1], [74, 1], [75, 1], [76, 3], [0, 2]];
@@ -66,7 +66,7 @@
         coz(true);
       };
       r.onerror = () => coz(false);
-      r.src = FOTO.src;
+      window.Sifre.resim(FOTO.src).then((u) => { r.src = u; }).catch(() => coz(false));
     });
   }
   function foto2(tuval) {
@@ -148,7 +148,7 @@
         kutu.classList.add('duragan');
         return;
       }
-      const sure = Math.max(26000, SATIR.length * 1200);
+      const sure = Math.max(15000, SATIR.length * 650);
       kutu.style.animationDuration = `${sure}ms`;
       kutu.addEventListener('animationend', son);
     });
@@ -170,13 +170,13 @@
     j.appendChild(notP);
     if (kameraAcikti) {
       await Y.daktilo(notP, 'Kamera kapandı.');
-      await bekle(1500);
+      await bekle(600);
     }
     await Y.daktilo(notP, 'selimkadiryaar31 yazıyor…', { ses: false });
-    await bekle(azalt ? 300 : 6200);
+    await bekle(azalt ? 300 : 2200);
     notP.textContent = 'tamam';
     Ses.can(174.61, 12, 0.5);
-    await bekle(2600);
+    await bekle(1000);
     await jenerik();
 
     $('#f-sonra').hidden = false;

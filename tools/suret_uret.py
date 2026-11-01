@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """images/ klasöründeki fotoğraflardan sitenin kullandığı suretleri üretir.
 
-Çıktılar:
-  assets/suret/<ad>.png         1 bit Atkinson dither (mürekkep + kemik)
-  assets/suret/renkli/<ad>.jpg  levhaya tıklayınca açılan aslı
-  assets/suret/bugun.jpg        son bölümün tek renkli fotoğrafı
-  assets/suret/avatar.png       kehanet sohbetinin küçük resmi
-  assets/suret/kafa.png         oyundaki karakter modeli v0.1
-  js/portre-veri.js             kapüşonlu portre (gri JPEG, data URI; file:// altında
-                                canvas kirlenmesin diye gömülü)
+Çıktılar git dışındaki tools/gizli_kaynak/acik/suret/ altına gider. Yayına çıkmazlar:
+ardından tools/gizli_uret.py bunları parolayla şifreleyip assets/r/ altına yazar.
+  <ad>.png         1 bit Atkinson dither (mürekkep + kemik)
+  renkli/<ad>.jpg  levhaya tıklayınca açılan aslı
+  bugun.jpg        son bölümün tek renkli fotoğrafı
+  avatar.png       kehanet sohbetinin küçük resmi
+  kafa.png         oyundaki karakter modeli v0.1
+  portre.jpg       kapüşonlu portre (gri)
 
-Çalıştırma:  python3 tools/suret_uret.py   (Pillow gerekir)
+Çalıştırma:  python3 tools/suret_uret.py && python3 tools/gizli_uret.py   (Pillow gerekir)
 """
-import base64
-import io
 from collections import deque
 from pathlib import Path
 
@@ -21,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 KOK = Path(__file__).resolve().parent.parent
 GIRDI = KOK / "images"
-CIKTI = KOK / "assets" / "suret"
+CIKTI = KOK / "tools" / "gizli_kaynak" / "acik" / "suret"
 MUREKKEP = (10, 8, 7)
 KAGIT = (217, 208, 186)
 
@@ -134,16 +132,8 @@ def portre():
          for v in range(256)]
     )
     im = im.resize((540, round(540 * im.size[1] / im.size[0])), Image.LANCZOS)
-    tampon = io.BytesIO()
-    im.save(tampon, "JPEG", quality=72, optimize=True)
-    veri = base64.b64encode(tampon.getvalue()).decode()
-    (KOK / "js").mkdir(exist_ok=True)
-    (KOK / "js" / "portre-veri.js").write_text(
-        "// tools/suret_uret.py üretir, elle düzenleme.\n"
-        f"window.PORTRE_VERI={{g:{im.size[0]},y:{im.size[1]},"
-        f'src:"data:image/jpeg;base64,{veri}"}};\n'
-    )
-    print(f"portre     {im.size[0]}x{im.size[1]}  {len(veri) // 1024} KB")
+    im.save(CIKTI / "portre.jpg", "JPEG", quality=72, optimize=True)
+    print(f"portre     {im.size[0]}x{im.size[1]}  {(CIKTI / 'portre.jpg').stat().st_size // 1024} KB")
 
 
 def bugun():

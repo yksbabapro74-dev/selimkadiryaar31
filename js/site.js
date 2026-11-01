@@ -184,7 +184,9 @@
       sira = (i + levhalar.length) % levhalar.length;
       const l = levhalar[sira];
       const a = l.querySelector('a');
-      resim.src = a.getAttribute('href');
+      const yol = a.dataset.resimBag;
+      resim.removeAttribute('src');
+      window.Sifre.resim(yol).then((u) => { if (a.dataset.resimBag === yol && levhalar[sira] === l) resim.src = u; }).catch(() => {});
       resim.alt = l.querySelector('img').alt;
       yazi.innerHTML = l.querySelector('figcaption').innerHTML;
     }
@@ -258,9 +260,11 @@
       im.style.aspectRatio = `${im.getAttribute('width')}/${im.getAttribute('height')}`;
       im.style.objectFit = 'cover';
       im.style.objectPosition = '50% 30%';
-      im.src = 'assets/suret/goruldu.png';
+      const yeni = 'suret/goruldu.png';
+      im.dataset.resim = yeni;
+      window.Sifre.resim(yeni).then((u) => { if (im.dataset.resim === yeni) im.src = u; }).catch(() => {});
       im.alt = 'Kameraya boş boş bakan, gözlüklü bir yüz.';
-      a.setAttribute('href', 'assets/suret/renkli/goruldu.jpg');
+      a.dataset.resimBag = 'suret/renkli/goruldu.jpg';
       l.classList.add('dondu');
       const no = l.querySelector('.levha-no').textContent.split(' · ')[0];
       l.querySelector('figcaption').innerHTML = `<span class="levha-no">${no} · şimdi</span><b>Görüldü.</b> Bu levhada başka bir şey vardı.`;

@@ -3,7 +3,7 @@
 
 Yapay zekâ çalışmaz, ekran kartı gerekmez. Girdi gorsel_uret.py çıktıları:
 
-    python tools/kamera_bile.py <sahne_klasoru> <figur.png> <assets/kamera>
+    python tools/kamera_bile.py <sahne_klasoru> <figur.png> tools/gizli_kaynak/acik/kamera
 
 Sahne klasöründe c01.png ... c15.png (896×672) durur. Figür düz arka planlı tam boy bir fotoğraftır;
 yüzü burada silinir: hiçbir sahnede yüz yoktur, kapüşonun içi karadır, iki küçük parıltı gözlüktür.

@@ -203,17 +203,37 @@
     location.href = './';
   });
 
+  // Parolasız gelen burada boş kutu görür. Görsel parolayla açılır, açılınca kutu kendini onarır.
+  document.querySelectorAll('#magaza img[data-resim]').forEach((im) => {
+    im.addEventListener('load', () => {
+      im.hidden = false;
+      const li = im.closest('li.m-kirik');
+      if (!li) return;
+      li.classList.remove('m-kirik');
+      li.querySelector('span').textContent = li.dataset.yazi;
+    }, { once: true });
+  });
+
   // Sayfa bakmadığında değişir. Burası korkunç değil; yalnızca bir şey yerinde durmuyor.
   function sizinti() {
     const kapak = $('#m-kapak-resim'), yazi = document.querySelector('.m-kapak-yazi');
     const kapakDegis = () => {
       if ($('#magaza').hidden || kapak.dataset.degisti) return;
       kapak.dataset.degisti = '1';
-      kapak.src = 'assets/kamera/c10_uzak.jpg';
-      kapak.alt = 'Gece, gözetleme kamerası görüntüsü. Apartman koridorunun dibinde biri duruyor.';
-      kapak.style.mixBlendMode = 'normal';
-      kapak.style.imageRendering = 'auto';
-      yazi.textContent = 'kapak görseli yapıldı';
+      // Anahtarı olmayana görsel yok: yalnızca yazı değişir.
+      if (!S.anahtar()) {
+        yazi.textContent = 'kapak görseli yapıldı. anahtarı olana.';
+        return;
+      }
+      const yol = 'kamera/c10_uzak.jpg';
+      kapak.dataset.resim = yol;
+      S.resim(yol).then((u) => {
+        kapak.src = u;
+        kapak.alt = 'Gece, gözetleme kamerası görüntüsü. Apartman koridorunun dibinde biri duruyor.';
+        kapak.style.mixBlendMode = 'normal';
+        kapak.style.imageRendering = 'auto';
+        yazi.textContent = 'kapak görseli yapıldı';
+      }).catch(() => {});
     };
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) kapakDegis();

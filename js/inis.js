@@ -340,11 +340,12 @@
     const $k = kur(`<div class="c-telgraf">
       <div class="t21-kagit"><p class="t21-ust">TELGRAF</p><p class="t21-metin" id="tm"></p><p class="t21-alt">Çekildiği yer: okunmuyor · Gönderen: okul müdürü</p></div>
       <figure class="t21-foto" id="tf" hidden>
-        <div class="t21-kare" id="tk"><img src="assets/foto/f1921.jpg" alt="1921 tarihli toplu okul fotoğrafı. Sıralar hâlinde yetişkin öğrenciler. Arka sırada, yüzü seçilmeyen uzun biri. Arkadaki kapıda tebeşirle: arka-sira."></div>
+        <div class="t21-kare" id="tk"><img alt="1921 tarihli toplu okul fotoğrafı. Sıralar hâlinde yetişkin öğrenciler. Arka sırada, yüzü seçilmeyen uzun biri. Arkadaki kapıda tebeşirle: arka-sira."></div>
         <figcaption>Mektep fotoğrafı, 1921. Arka sıra. Okulun kayıtlarında yok. <span id="tn2">Fotoğrafa dokun.</span></figcaption>
       </figure>
       <button type="button" class="c-asagi" id="tg" hidden>daha eski</button>
     </div>`, 'telgraf');
+    window.Sifre.resim('foto/f1921.jpg').then((u) => { $k('#tk img').src = u; }).catch(() => {});
     await Y.daktilo($k('#tm'), 'MEKTEP FOTOGRAFI CEKILDI STOP ARKA SIRADA BIRI VAR STOP KIMSE TANIMIYOR STOP YOKLAMADA CEVAP VERMEDI STOP FOTOGRAFI YOLLUYORUM STOP BAKMA STOP', { hiz: 30 });
     await bekle(1200);
     $k('#tf').hidden = false;

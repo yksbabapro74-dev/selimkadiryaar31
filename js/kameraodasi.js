@@ -23,7 +23,7 @@
   const CAM16 = 15;
   const yolda = new Set(YOL);
   const ISIM = (i) => `CAM ${iki(i + 1)}`;
-  const dosya = (i, tur) => `assets/kamera/c${iki(i + 1)}_${tur}.jpg`;
+  const dosya = (i, tur) => `kamera/c${iki(i + 1)}_${tur}.jpg`;
 
   const resim = {};
   function yukle(onGuncel) {
@@ -45,7 +45,7 @@
         onGuncel(bitti / liste.length);
         c();
       };
-      r.src = dosya(i, t);
+      window.Sifre.resim(dosya(i, t)).then((u) => { r.src = u; }).catch(() => r.onerror());
       resim[`${i}_${t}`] = r;
     })));
   }
@@ -78,10 +78,10 @@
 
   // ---------- oyun durumu ----------
   const SAAT_BAS = 3 * 60 + 41;
-  const SN_DK = 6;              // bir oyun dakikası
+  const SN_DK = 3.5;            // bir oyun dakikası
   const SONUNA = 27 * SN_DK;    // 04.08: bütün kameralar gider
-  const ASAMA_SN = 7;           // bakmazsan bir aşama
-  const BAKIS_SN = 8;           // bir bakış gücü
+  const ASAMA_SN = 4;           // bakmazsan bir aşama
+  const BAKIS_SN = 5;           // bir bakış gücü
   const hucre = [];
   let secili = 0, adim = 0, birikim = 0, bakisGuc = 1, dinleniyor = 0, oyunda = false, baslangic = 0;
   let parazit = new Map(), durumHarita = new Map(), kapali = new Set(), gozle = 0, tamBakis = 0, hareketHucre = -1, hareketBitis = 0;
@@ -292,12 +292,12 @@
         // Bir bakışı sonuna kadar tuttun: bir aşama geri. Görüntü de gider, göz dinlenir.
         tamBakis = 0;
         geri();
-        dinleniyor = n + 2600;
+        dinleniyor = n + 1800;
         parazit.set(secili, dinleniyor);
         Ses.parazit(0.5, 0.06);
       }
     } else {
-      bakisGuc = Math.min(1, bakisGuc + dt / 11);
+      bakisGuc = Math.min(1, bakisGuc + dt / 7);
       birikim += dt;
     }
     barEl.style.width = `${(bakisGuc * 100).toFixed(1)}%`;
@@ -318,8 +318,8 @@
     Ses.ortamKis(0.25);
     if (saatSes) saatSes();
     saatSes = null;
-    Ses.ters(2.6, 0.26);
-    setTimeout(() => Ses.kume(0), azalt ? 0 : 2610);
+    Ses.ters(1.6, 0.26);
+    setTimeout(() => Ses.kume(0), azalt ? 0 : 1610);
     // Kameralar teker teker gider. Sonuncusu sensin.
     const sira = KAMERA.map((_, i) => i).filter((i) => i !== CAM16);
     for (const i of sira) {
@@ -329,11 +329,11 @@
         etiketYaz();
       }
       Ses.parazit(0.07, 0.04);
-      await Y.bekle(170);
+      await Y.bekle(100);
     }
     secili = CAM16;
     etiketYaz();
-    await Y.bekle(1500);
+    await Y.bekle(700);
     await window.Arkanda.basla({ uzaklik, kirpma: kirpmaSayi });
   }
 
@@ -456,7 +456,7 @@
           if (Math.random() < 0.5) Ses.kayit('sayfa', { x: 1.4, z: 1.1, ses: 0.34, yanki: 0.3 });
         }
         aldat();
-      }, 11000 + Math.random() * 12000);
+      }, 7000 + Math.random() * 7000);
     })();
   });
 })();

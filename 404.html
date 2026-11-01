@@ -9,14 +9,16 @@
   var k = location.protocol === 'file:' ? './' : (/\.github\.io$/.test(location.hostname) ? '/selimkadiryaar31/' : '/');
   document.write('<base href="' + k + '">');
   document.documentElement.className = 'js';
+  try { if (localStorage.getItem('kadim.bitti')) document.documentElement.classList.add('olu'); } catch (e) {}
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>—</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16'/%3E%3Cpath fill='%23f23a1d' d='M3 7h10v2H3z'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16'/%3E%3Cpath fill='%23f0201a' d='M3 7h10v2H3z'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/derin.css">
 <link rel="stylesheet" href="css/gizli.css">
 <noscript><style>body>*{display:none!important}</style></noscript>
 </head>

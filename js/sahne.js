@@ -6,7 +6,7 @@
   const tuval = document.getElementById('sahne');
   if (!tuval) return;
   const ctx = tuval.getContext('2d', { alpha: false });
-  const giris = document.getElementById('giris');
+  const giris = document.getElementById('yayin');
   const { azalt, RENK, BAYER, kayit, dinle, javaHash } = window.Ortak;
   const Ses = window.Ses;
   const kok = document.documentElement;
@@ -243,12 +243,12 @@
   let grupC = 1, grupS = 0;
   let ekSx = 0, ekSy = 0, ekSz = 0, ekUx = 1, ekUz = 0, kaydir = 0, imlec = 0;
   // parla: eşikten sonra sahne karanlıktan yavaşça çıkar.
-  let parla = azalt ? 1 : 0, yuzDonuk = kayit.cevap === 'verdi';
+  let parla = azalt ? 1 : 0, yuzDonuk = kayit.cevap === 'verdi', koltukBos = false, geciciYuz = false;
 
   function boyutla() {
     const cssG = giris.clientWidth, cssY = giris.clientHeight;
     const dar = cssG < 700;
-    const taban = Math.max(dar ? 2 : 3, Math.ceil(cssG / 560));
+    const taban = Math.max(2, Math.ceil(cssG / 400));
     pikselBoy = Math.max(pikselBoy > taban ? pikselBoy : 0, taban);
     W = Math.max(40, Math.floor(cssG / pikselBoy));
     H = Math.max(40, Math.floor(cssY / pikselBoy));
@@ -264,8 +264,8 @@
     sh = new Uint32Array(n);
     vig = new Float32Array(n);
     const dikey = cssG < cssY * 1.05;
-    ox = dikey ? W * 0.5 : W * 0.69;
-    oy = dikey ? H * 0.31 : H * 0.455;
+    ox = W * 0.5;
+    oy = dikey ? H * 0.31 : H * 0.46;
     f = dikey ? Math.min(W * 1.32, H * 0.72) : H * 1.16;
     // Yazıların altını karart: başlık sol altta (dikey ekranda altta) okunsun.
     const ss = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -273,16 +273,9 @@
       const ny = y / H;
       for (let x = 0; x < W; x++, i++) {
         const nx = x / W;
-        let k = 1;
-        if (dikey) {
-          k *= 1 - ss(0.46, 0.66, ny) * 0.97;
-        } else {
-          k *= 1 - ss(0.8, 0.5, nx) * ss(0.42, 0.58, ny) * 0.99;
-          k *= 1 - ss(0.88, 1, ny) * 0.92;
-          k *= 1 - ss(0.5, 0, nx) * 0.3;
-        }
-        k *= 1 - ss(0.1, 0.03, ny) * 0.97;
-        vig[i] = k;
+        // Ucuz bir merceğin kenarı: yazı altı karartması yok, bu bir kamera.
+        const q = Math.hypot(nx - 0.5, (ny - 0.5) * 0.8);
+        vig[i] = 1 - ss(0.42, 0.72, q) * 0.72;
       }
     }
   }
@@ -597,7 +590,7 @@
     const Ka = cam, ax = AY_ISIK[0], ay = AY_ISIK[1], azz = AY_ISIK[2];
     const AY_G = 0.03;
     // Otuz bir saniyede bir, göz açıp kapayana kadar: kulaklık yok, iki göz var.
-    const bakis = yuzDonuk || (!azalt && parla >= 1 && t % 31 > 30.62);
+    const bakis = yuzDonuk || geciciYuz || (!azalt && parla >= 1 && t % 31 > 30.62);
 
     // Sabit geometri
     for (let i = 0, p = 0, q = 0; i < S.adet; i++, p += 9, q += 3) {
@@ -617,7 +610,7 @@
       const x = G.n[i], z = G.n[i + 2];
       dn[i] = x * c + z * s; dn[i + 1] = G.n[i + 1]; dn[i + 2] = -x * s + z * c;
     }
-    for (let i = 0, p = 0, q = 0; i < G.adet; i++, p += 9, q += 3) {
+    for (let i = 0, p = 0, q = 0; i < G.adet && !koltukBos; i++, p += 9, q += 3) {
       if (bakis && i >= KULAK_BAS) continue;
       const nx = dn[q], ny = dn[q + 1], nz = dn[q + 2];
       if ((Ka[0] - dp[p]) * nx + (Ka[1] - dp[p + 1]) * ny + (Ka[2] - dp[p + 2]) * nz <= 0) continue;
@@ -643,7 +636,7 @@
       const X = x * FS, Z = FZ;
       return izd([X * c + Z * s, y * FS, -X * s + Z * c]);
     });
-    for (let i = 1; i < siluetDunya.length - 1; i++) {
+    for (let i = 1; i < siluetDunya.length - 1 && !koltukBos; i++) {
       const A = siluetDunya[0], B = siluetDunya[i], C = siluetDunya[i + 1];
       kirpVeCiz(A[0], 0, A[2], B[0], 0, B[2], C[0], 0, C[2], golgeUcgen);
     }
@@ -887,6 +880,12 @@
   }
 
   dinle('cevap', (tur) => { yuzDonuk = tur === 'verdi'; iste(); });
+  // Yayın: oturduğu yerde yok, ya da kulaklığı çıkmış. Kimse kalktığını görmedi.
+  dinle('yayin-figur', (v) => {
+    koltukBos = v === 'yok';
+    geciciYuz = v === 'yuz';
+    iste();
+  });
   dinle('esik', () => {
     girisAn = performance.now();
     // Biri daireye yakın durur; kamera dönünce önünden geçer.

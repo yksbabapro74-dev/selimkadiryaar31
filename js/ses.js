@@ -48,17 +48,22 @@ window.Ses = (function () {
     [130.81, 138.59, 196, 207.65],
   ];
   const ANA_SES = 0.9;
+  // Uğultu ve koro olayların altında durur. Üstüne çıkarsa sınırlayıcıyı doldurur;
+  // o zaman ne fısıltı duyulur ne tıkırtı, çığlık da uğultudan farksız kalır.
+  const ORTAM_SES = 0.13;
+  const CIGLIK_SES = 0.8;
 
   function Motor(c) {
     const g = (v) => { const k = c.createGain(); k.gain.value = v; return k; };
     const simdi = () => c.currentTime;
 
     const sinir = c.createDynamicsCompressor();
-    sinir.threshold.value = -12;
-    sinir.knee.value = 6;
-    sinir.ratio.value = 14;
-    sinir.attack.value = 0.004;
-    sinir.release.value = 0.22;
+    // Yalnızca tavan: normal seste dokunmaz, ani tepeleri keser.
+    sinir.threshold.value = -6;
+    sinir.knee.value = 3;
+    sinir.ratio.value = 20;
+    sinir.attack.value = 0.003;
+    sinir.release.value = 0.2;
     sinir.connect(c.destination);
 
     const ana = g(0);
@@ -71,7 +76,7 @@ window.Ses = (function () {
     konv.connect(islak);
     islak.connect(ana);
     // Çığlık sessizliği deler: ana kazancı atlar.
-    const delen = g(1);
+    const delen = g(CIGLIK_SES);
     delen.connect(sinir);
 
     const beyaz = gurultu(c, 3, false), kahve = gurultu(c, 4, true);
@@ -88,12 +93,17 @@ window.Ses = (function () {
       return o;
     }
 
+    const ortam = g(ORTAM_SES);
+    ortam.connect(kuru);
+    const ortamYanki = g(ORTAM_SES);
+    ortamYanki.connect(konv);
+
     // --- uğultu: alt oktav, üstünde tritonlu bir testere
     const ugultu = g(0);
-    ugultu.connect(kuru);
+    ugultu.connect(ortam);
     const ugultuIslak = g(0.2);
     ugultu.connect(ugultuIslak);
-    ugultuIslak.connect(konv);
+    ugultuIslak.connect(ortamYanki);
     const suzgec = c.createBiquadFilter();
     suzgec.type = 'lowpass';
     suzgec.frequency.value = 170;
@@ -144,10 +154,10 @@ window.Ses = (function () {
     });
     const koroKuru = g(0.4);
     koro.connect(koroKuru);
-    koroKuru.connect(kuru);
+    koroKuru.connect(ortam);
     const koroIslak = g(1);
     koro.connect(koroIslak);
-    koroIslak.connect(konv);
+    koroIslak.connect(ortamYanki);
     const notalar = AKOR[0].map((f, i) => osc('sawtooth', f, (i - 1.5) * 4, 0.3, koroGiris));
     const vib = c.createOscillator();
     vib.frequency.value = 4.6;
@@ -164,10 +174,10 @@ window.Ses = (function () {
 
     // --- tıkırtı yolu: kes dendiğinde hemen susar
     const tikYol = g(1);
-    const tikKuru = g(0.22);
+    const tikKuru = g(0.4);
     tikYol.connect(tikKuru);
     tikKuru.connect(kuru);
-    const tikIslak = g(0.9);
+    const tikIslak = g(1.3);
     tikYol.connect(tikIslak);
     tikIslak.connect(konv);
 
@@ -212,7 +222,7 @@ window.Ses = (function () {
       },
       can(f, sure, ses, t) {
         const b = t === undefined ? simdi() : t;
-        const top = g(ses);
+        const top = g(ses * 0.6);
         top.connect(kuru);
         const gonder = g(0.8);
         top.connect(gonder);
@@ -240,7 +250,7 @@ window.Ses = (function () {
             o.frequency.exponentialRampToValueAtTime(f1, b + d + 0.13);
             const e = c.createGain();
             e.gain.setValueAtTime(0, b + d);
-            e.gain.linearRampToValueAtTime(guc * k * oran, b + d + 0.012);
+            e.gain.linearRampToValueAtTime(guc * k * oran * 0.6, b + d + 0.012);
             e.gain.exponentialRampToValueAtTime(0.0001, b + d + 0.24);
             o.connect(e);
             e.connect(kuru);
@@ -313,14 +323,35 @@ window.Ses = (function () {
         bp.connect(hp);
         hp.connect(e);
         e.connect(p);
-        const kk = g(0.5);
+        const kk = g(1);
         p.connect(kk);
         kk.connect(kuru);
-        const ii = g(0.8);
+        const ii = g(1.1);
         p.connect(ii);
         ii.connect(konv);
         s.start(b);
         s.stop(b + sure + 0.1);
+      },
+      // Sinyal gitti.
+      parazit(sure, ses, t) {
+        const b = t === undefined ? simdi() : t;
+        const s = c.createBufferSource();
+        s.buffer = beyaz;
+        s.loop = true;
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 3100;
+        bp.Q.value = 0.5;
+        const e = c.createGain();
+        e.gain.setValueAtTime(0, b);
+        e.gain.linearRampToValueAtTime(ses, b + 0.01);
+        e.gain.setValueAtTime(ses, b + Math.max(0.02, sure - 0.03));
+        e.gain.linearRampToValueAtTime(0, b + sure);
+        s.connect(bp);
+        bp.connect(e);
+        e.connect(kuru);
+        s.start(b);
+        s.stop(b + sure + 0.02);
       },
       cigilik(ses, t) {
         const b = t === undefined ? simdi() : t;
@@ -448,6 +479,7 @@ window.Ses = (function () {
     tik: canli((ses) => motor.tik(Math.random() * 0.6 - 0.3, ses || 0.35)),
     fisilti: canli((sure) => motor.fisilti(Math.random() * 1.6 - 0.8, sure || 2)),
     cigilik: canli((ses) => motor.cigilik(ses === undefined ? 0.9 : ses)),
+    parazit: canli((sure, ses) => motor.parazit(sure || 1, ses === undefined ? 0.14 : ses)),
     vurus: canli((guc) => motor.vurus(guc || 0.8)),
     kalp: canli(kalp),
     // Tarayıcının kendi sesi. Kalın, yavaş, Türkçe biliyorsa Türkçe. Yoksa hiç konuşmaz.

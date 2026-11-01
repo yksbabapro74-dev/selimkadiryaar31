@@ -4,6 +4,12 @@
   'use strict';
   const O = window.Ortak, Ses = window.Ses, S = window.Sifre, V = window.GIZLI;
   const { depo } = O;
+  // Son kapıdan geçen için hiçbir kat yok.
+  if (depo.al('bitti')) {
+    document.body.appendChild(O.oluSayfa({ son: true }).e);
+    document.title = 'Problem loading page';
+    return;
+  }
   const $ = (s) => document.querySelector(s);
   const kat = $('#kat'), kapi = $('#kat-kapi'), yukari = $('#kat-yukari'), sesDugme = $('#ses-dugme');
   const dosya = location.protocol === 'file:';
@@ -60,6 +66,21 @@
     mesajlar: () => listeOku('mesajlar'),
     katlar: () => listeOku('katlar'),
     denenen: () => listeOku('denenen'),
+    parmaklar: () => listeOku('parmak'),
+    // Beş parmak: her biri bir katta açılır. Söylemez, bir kere fısıldar.
+    parmak(ad) {
+      const l = listeOku('parmak');
+      if (l.includes(ad)) return l.length;
+      l.push(ad);
+      depo.yaz('parmak', JSON.stringify(l));
+      const t = document.createElement('p');
+      t.className = 'kat-parmak';
+      t.textContent = `bir parmak açıldı. ${l.length}/5`;
+      document.body.appendChild(t);
+      Ses.vurus(0.5);
+      setTimeout(() => t.remove(), 6200);
+      return l.length;
+    },
     // Yüz gerekirse sonradan yüklenir.
     portre() {
       if (!portreSoz) {
@@ -116,7 +137,7 @@
   function yok() {
     const onceki = listeOku('denenen').filter((x) => x !== kod);
     if (kod) listeyeEkle('denenen', kod);
-    kat.innerHTML = '<div class="kat-yok"><p class="kat-soz" id="y1">Burada bir şey yok.</p><p class="kat-soz kor" id="y2" hidden>Henüz.</p><p class="kat-liste" id="y3" hidden></p></div>';
+    kat.innerHTML = '<div class="kat-yok"><h1 class="kat-404">404 Not Found</h1><p class="kat-soz" id="y1">Burada bir şey yok.</p><p class="kat-soz kor" id="y2" hidden>Henüz.</p><p class="kat-liste" id="y3" hidden></p><p class="kat-sunucu">nginx/1.4.6 (Ugarit)</p></div>';
     setTimeout(() => {
       $('#y2').hidden = false;
       Ses.fisilti(1.6);
@@ -134,6 +155,13 @@
     kapi.textContent = '';
     yukari.href = kokAdres;
     yukari.hidden = false;
+    const ust = document.createElement('div');
+    ust.className = 'ust-cubuk kat-ust';
+    const adr = document.createElement('span');
+    adr.className = 'adres';
+    adr.textContent = `http://${O.onion()}/${kod}`;
+    ust.appendChild(adr);
+    document.body.insertBefore(ust, document.body.firstChild);
     const id = S.hex(S.ozet(S.utf8('kapi:' + V.tuz + kod))).slice(0, 24);
     const kayit = V.kat[id];
     if (kayit) {
@@ -148,9 +176,9 @@
 
   function parola() {
     kapi.hidden = false;
-    kapi.innerHTML = '<form class="kapi-form" autocomplete="off"><p class="kapi-soz" id="kp-soz">Buraya yukarıdan gelmedin. Parola.</p>'
-      + '<label class="gizli" for="kp">Parola</label><input id="kp" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="parola">'
-      + '<button type="submit" class="dugme">söyle</button><p class="kapi-cevap" id="kp-cevap" aria-live="polite"></p></form>';
+    kapi.innerHTML = '<form class="kapi-form" autocomplete="off"><p class="kapi-soz" id="kp-soz">Buraya yukarıdan gelmedin. erişim anahtarı:</p>'
+      + '<label class="gizli" for="kp">Parola</label><input id="kp" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">'
+      + '<button type="submit" class="dugme">gönder</button><p class="kapi-cevap" id="kp-cevap" aria-live="polite"></p></form>';
     const girdi = $('#kp');
     girdi.focus();
     kapi.firstChild.addEventListener('submit', (e) => {

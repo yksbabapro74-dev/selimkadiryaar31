@@ -38,7 +38,7 @@
   // ---------- sekme: sen yokken mesaj bırakır ----------
   const baslik = document.title;
   const ikon = $('link[rel="icon"]'), ikonEski = ikon.href;
-  const GOZ = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16'/%3E%3Cpath fill='%23f23a1d' d='M1 8h2V6h2V5h6v1h2v2h2v1h-2v2h-2v1H5v-1H3V9H1z'/%3E%3Cpath d='M6 6h4v5H6z'/%3E%3Cpath fill='%23f23a1d' d='M7 7h2v3H7z'/%3E%3C/svg%3E";
+  const GOZ = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16'/%3E%3Cpath fill='%23f0201a' d='M1 8h2V6h2V5h6v1h2v2h2v1h-2v2h-2v1H5v-1H3V9H1z'/%3E%3Cpath d='M6 6h4v5H6z'/%3E%3Cpath fill='%23f0201a' d='M7 7h2v3H7z'/%3E%3C/svg%3E";
   let sekmeZaman = 0, birakilan = 0;
   document.addEventListener('visibilitychange', () => {
     clearInterval(sekmeZaman);
@@ -267,10 +267,11 @@
       for (let x = 0; x < G; x++) cizim += RAMP[Math.min(9, Math.floor((gri[y * G + x] / 256) * 10))];
       cizim += '\n';
     }
-    console.log('%cKonsolu açtın.', 'font:400 34px "Jacquard 12",serif;color:#f23a1d');
-    console.log('%c' + cizim, 'color:#d9d0ba;background:#000;font:7px/7px monospace');
+    console.log(`[notice] ${O.onion()}\n[notice] 31 düğüm bağlı. biri sen.\n[warn]   konsol oturumu kaydediliyor.`);
+    console.log('%cKonsolu açtın.', 'font:700 26px "Times New Roman",serif;color:#f0201a');
+    console.log('%c' + cizim, 'color:#c8c8c8;background:#000;font:7px/7px monospace');
     console.log('Seni burada da gördü. Yine de cevap yazmayacak.');
-    console.log('%c10100 10100 11001', 'color:#f23a1d;font:400 16px monospace', '  beş bit. A=00001. Adresin sonuna.');
+    console.log('%c10100 10100 11001', 'color:#f0201a;font:400 16px monospace', '  beş bit. A=00001. Adresin sonuna.');
     console.log('Yardım istersen: kadim.yardim()');
   }).catch(() => {});
 

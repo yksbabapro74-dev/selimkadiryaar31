@@ -5,3 +5,4 @@ Disallow: /
 # Özellikle buralara bakılmasın.
 Disallow: /defter
 Disallow: /sessizoda
+Disallow: /arsiv

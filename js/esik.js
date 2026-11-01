@@ -1,7 +1,8 @@
-// Eşik: 3,1 saniye basılı tutulur. Otuz bir diş, saniyenin onda biri başına bir diş.
+// Eşik: devre kurulur, parola sorulur, insan olup olmadığına bakılır, sonra 3,1 saniye basılı tutulur.
 (function () {
   'use strict';
-  const { azalt, kayit, depo, yay, kalem, CSS_RENK } = window.Ortak;
+  const O = window.Ortak;
+  const { azalt, kayit, depo, yay, kalem, CSS_RENK } = O;
   const Ses = window.Ses, Sifre = window.Sifre;
   const kok = document.documentElement;
   const esik = document.getElementById('esik');
@@ -52,6 +53,34 @@
     });
   }
   metinYaz(satirlar());
+
+  // ---------- devre günlüğü ----------
+  const gunluk = document.getElementById('esik-log');
+  const GUNLUK = [
+    '[notice] Bootstrapped 5% (conn): Connecting to a relay',
+    '[notice] Bootstrapped 14% (handshake): Handshaking with a relay',
+    '[notice] Bootstrapped 45% (requesting_descriptors): Asking for relay descriptors',
+    '[notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits',
+    '[notice] Bootstrapped 90% (ap_handshake_done): Handshake finished with a relay to build circuits',
+    '[notice] Bootstrapped 100% (done): Done',
+    '[notice] devre: sen -> ugarit -> hattuşa -> ????',
+    '[warn]   son röle kendini bildirmedi. devre yine de kuruldu.',
+    '[warn]   bu devreyi sen kurmadın.',
+    `[notice] ${O.onion()}`,
+  ];
+  (function logYaz() {
+    if (azalt || Sifre.gecti()) {
+      gunluk.textContent = GUNLUK.slice(-4).join('\n');
+      return;
+    }
+    let i = 0;
+    (function sonraki() {
+      if (i >= GUNLUK.length || !gunluk.isConnected) return;
+      gunluk.textContent += (i ? '\n' : '') + GUNLUK[i];
+      i++;
+      setTimeout(sonraki, i < 6 ? 180 + Math.random() * 420 : 720 + Math.random() * 500);
+    })();
+  })();
 
   const m = (N - 1) / 2, dis = N * 0.48, ic = N * 0.41;
   const P = (i, r) => {
@@ -162,14 +191,87 @@
   }
   function birak() { tutuyor = false; }
   // Parola doğruysa basılı tutma aşaması açılır. Bu sekmede bir kez söylemek yeter.
+  function tutmaya() {
+    esik.classList.add('tutma');
+    tut.hidden = false;
+    sessiz.hidden = false;
+    tut.focus({ preventScroll: true });
+  }
   function kapiAc(soz) {
     acildi = true;
     form.hidden = true;
     cevap.textContent = '';
     if (soz) metinYaz(soz);
-    tut.hidden = false;
-    sessiz.hidden = false;
-    tut.focus({ preventScroll: true });
+    let gecmis = false;
+    try { gecmis = sessionStorage.getItem('kadim.insan') === '1'; } catch (e) { /* gizli sekme */ }
+    if (gecmis) tutmaya();
+    else insanMi().then(tutmaya);
+  }
+
+  // ---------- insan doğrulaması: nereye basarsan bas ----------
+  function insanMi() {
+    return new Promise((bitir) => {
+      const kutu = document.getElementById('captcha'), izgara = document.getElementById('captcha-izgara');
+      const durum = document.getElementById('captcha-durum'), dogrula = document.getElementById('esik-dogrula');
+      const TIP = ['koridor', 'merdiven', 'kapi', 'oda', 'koridor', 'oda', 'kapi', 'merdiven', 'koridor'];
+      const K = 84;
+      let tur = 0;
+      function kareCiz(t, i) {
+        const c = t.getContext('2d');
+        const v = c.createImageData(K, K);
+        const px = new Uint32Array(v.data.buffer);
+        const var1 = tur === 0 ? [1, 5, 6].includes(i) : true;
+        const figur = var1 ? { x: K * (0.32 + ((i * 37) % 40) / 100), y: K * (tur === 0 ? 0.74 : 0.98), boy: K * (tur === 0 ? 0.26 : 0.74) } : null;
+        O.kameraCiz(px, K, K, O.kameraHarita(TIP[i], K, K), { figur, isik: tur === 0 ? 1 : 0.8 });
+        c.putImageData(v, 0, 0);
+        // İkinci turda ortadaki kare başka bir yerden geliyor.
+        if (tur === 1 && i === 4) {
+          O.portreResmi().then((r) => {
+            O.atkinson(O.griOrnekle(r, K, K, [0.1, 0.32, 0.9, 0.62]), K, K, (d) => Math.max(0, d - 34), px, O.RENK.kagit, O.RENK.murekkep);
+            c.putImageData(v, 0, 0);
+          }).catch(() => {});
+        }
+      }
+      function kur() {
+        izgara.textContent = '';
+        for (let i = 0; i < 9; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'captcha-kare';
+          b.setAttribute('aria-pressed', 'false');
+          b.setAttribute('aria-label', `Kare ${i + 1}`);
+          const t = document.createElement('canvas');
+          t.width = K;
+          t.height = K;
+          b.appendChild(t);
+          b.addEventListener('click', () => {
+            b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+            Ses.tik(0.3);
+          });
+          izgara.appendChild(b);
+          kareCiz(t, i);
+        }
+      }
+      dogrula.addEventListener('click', () => {
+        if (tur === 0) {
+          tur = 1;
+          durum.textContent = 'Yanlış. Birini kaçırdın. Yine bak.';
+          Ses.fisilti(1.2);
+          kur();
+          return;
+        }
+        dogrula.disabled = true;
+        durum.textContent = 'Doğru. Hepsinde. Sen de dahil.';
+        try { sessionStorage.setItem('kadim.insan', '1'); } catch (e) { /* gizli sekme */ }
+        setTimeout(() => {
+          kutu.hidden = true;
+          bitir();
+        }, azalt ? 300 : 1500);
+      });
+      kutu.hidden = false;
+      kur();
+      dogrula.focus({ preventScroll: true });
+    });
   }
   form.addEventListener('submit', (e) => {
     e.preventDefault();

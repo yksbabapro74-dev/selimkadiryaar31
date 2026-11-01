@@ -4,8 +4,8 @@ window.Ortak = (function () {
 
   const azalt = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // 0xAABBGGRR (little-endian tuval piksel düzeni)
-  const RENK = { murekkep: 0xff07080a, kagit: 0xffbad0d9, kor: 0xff1d3af2, kan: 0xff0c176e };
-  const CSS_RENK = { murekkep: '#0a0807', kagit: '#d9d0ba', kor: '#f23a1d', kan: '#6e170c', kanli: '#140504' };
+  const RENK = { murekkep: 0xff000000, kagit: 0xffc8c8c8, kor: 0xff1a20f0, kan: 0xff0a0a5c };
+  const CSS_RENK = { murekkep: '#000000', kagit: '#c8c8c8', kor: '#f0201a', kan: '#5c0a0a', kanli: '#000000' };
 
   const BAYER_TABLO = [
     0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26,
@@ -48,6 +48,150 @@ window.Ortak = (function () {
       : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'tarayıcı';
     const d = new Date(), iki = (n) => String(n).padStart(2, '0');
     return { os, osDan: os2, tarayici, ekran: `${screen.width}×${screen.height}`, saat: `${iki(d.getHours())}.${iki(d.getMinutes())}`, tarih: d };
+  }
+
+  // ---------- gizli servis adresi: makineden türer, başkasına aynısı düşmez ----------
+  function onion() {
+    const A = 'abcdefghijklmnopqrstuvwxyz234567';
+    let h = javaHash(`${navigator.userAgent}|${screen.width}x${screen.height}|${navigator.language}`);
+    let ek = '';
+    for (let i = 0; i < 41; i++) {
+      h = (Math.imul(h, 31) + i + 7) | 0;
+      ek += A[(h >>> 7) & 31];
+    }
+    return `selimkadiryaar3${ek}.onion`;
+  }
+  function misafir() {
+    let n = depo.al('misafir');
+    if (!n) {
+      n = String(1000 + Math.floor(Math.random() * 8999));
+      depo.yaz('misafir', n);
+    }
+    return `misafir_${n}`;
+  }
+
+  // ---------- gözetleme kamerası: küçük, gürültülü, tek bitlik ----------
+  function kameraHarita(tip, W, H) {
+    const h = new Float32Array(W * H);
+    const cx = W / 2, cy = H * 0.46;
+    for (let y = 0, i = 0; y < H; y++) {
+      for (let x = 0; x < W; x++, i++) {
+        const nx = (x - cx) / W, ny = (y - cy) / H, ay = y / H;
+        let v = 0;
+        if (tip === 'koridor') {
+          // Tek kaçış noktası: içeri doğru kararır, tavan lambaları bant bant.
+          const d = Math.max(Math.abs(nx) * 1.2, Math.abs(ny));
+          v = 0.04 + d * 0.6;
+          v *= 0.72 + 0.28 * Math.cos(d * 44);
+          if (d < 0.085) v = 0.015;
+          if (Math.abs(Math.abs(nx) * 1.2 - Math.abs(ny)) < 0.01) v *= 0.25;
+        } else if (tip === 'merdiven') {
+          const b = Math.floor(ay * ay * 11);
+          v = (b / 11) * 0.5 + (b % 2 ? 0.12 : 0.02);
+          v *= Math.max(0, 1 - Math.abs(nx) * (2.6 - ay * 1.4));
+          if (ay < 0.18) v = 0.012;
+        } else if (tip === 'kapi') {
+          const ic = Math.abs(nx) < 0.19 && ay > 0.14 && ay < 0.84;
+          v = ic ? 0.13 + 0.03 * Math.sin(x * 0.8) : 0.05 + ay * 0.1;
+          if (Math.abs(Math.abs(nx) - 0.19) < 0.012 && ay > 0.14 && ay < 0.84) v = 0.32;
+          if (ay >= 0.84) v = 0.1 + 0.05 * ay;
+          if (ay >= 0.84 && ay < 0.885 && Math.abs(nx) < 0.19) v = 0.95;
+          if (ay >= 0.885 && Math.abs(nx) < 0.19 + (ay - 0.885) * 1.1) v = Math.max(v, 0.55 - (ay - 0.885) * 3.6);
+        } else if (tip === 'oda') {
+          const q = Math.hypot(nx * 1.1, ay - 0.14);
+          v = Math.max(0, 0.7 - q * 1.05);
+          if (ay > 0.68) v *= 0.62;
+          if (Math.abs(ay - 0.68) < 0.008) v *= 0.3;
+          if (q < 0.022) v = 1;
+        } else if (tip === 'sandalye' || tip === 'koltuk') {
+          // Arkadan: ekran ışığı, önünde koltuk. Burada oturan sensin. Ya da oturmuyorsun.
+          v = Math.max(0, 0.62 - Math.hypot(nx * 1.15, (ay - 0.38) * 1.4) * 1.5) + 0.03;
+          const sirt = Math.abs(nx) < 0.15 - Math.max(0, 0.42 - ay) * 0.3 && ay > 0.42 && ay < 0.9;
+          const kafa = tip === 'sandalye' && Math.hypot(nx * 1.25, ay - 0.36) < 0.085;
+          if (sirt || kafa) v = 0.008;
+        } else {
+          v = 0.02;
+        }
+        h[i] = v;
+      }
+    }
+    return h;
+  }
+  let kameraR = 3101;
+  function kameraCiz(cikis, W, H, harita, sec) {
+    const s = sec || {};
+    const gur = s.gurultu === undefined ? 0.075 : s.gurultu, isik = s.isik === undefined ? 1 : s.isik;
+    const acik = s.acik || RENK.kagit, kara = RENK.murekkep, gri = !!s.gri;
+    for (let y = 0, i = 0; y < H; y++) {
+      const by = (y & 7) << 3;
+      // Ucuz kamera: satırlar birbirini tam tutmaz.
+      kameraR = (Math.imul(kameraR, 1664525) + 1013904223) >>> 0;
+      const serit = gri ? ((kameraR >>> 8) / 16777216 - 0.5) * gur * 0.5 : 0;
+      for (let x = 0; x < W; x++, i++) {
+        kameraR = (Math.imul(kameraR, 1664525) + 1013904223) >>> 0;
+        const v = harita[i] * isik + ((kameraR >>> 8) / 16777216 - 0.5) * gur;
+        if (gri) {
+          const g = Math.max(0, Math.min(255, Math.round(Math.pow(Math.max(0, v + serit), 0.82) * 215 + 4)));
+          cikis[i] = 0xff000000 | (g << 16) | (g << 8) | g;
+        } else cikis[i] = v > BAYER[by | (x & 7)] ? acik : kara;
+      }
+    }
+    const f = s.figur;
+    if (!f) return;
+    // Karartı: baş, omuz, aşağı doğru genişleyen gövde. Hiç ışık almaz.
+    const boy = f.boy, tepe = f.y - boy, bas = Math.max(1, boy * 0.095), omuz = boy * 0.17;
+    const y0 = Math.max(0, Math.floor(tepe)), y1 = Math.min(H - 1, Math.floor(f.y));
+    for (let y = y0; y <= y1; y++) {
+      const u = (y - tepe) / boy;
+      let g;
+      if (u < 0.2) g = bas * Math.sqrt(Math.max(0, 1 - ((u - 0.1) / 0.1) ** 2));
+      else if (u < 0.27) g = bas * 0.72 + (omuz - bas * 0.72) * ((u - 0.2) / 0.07);
+      else g = omuz + (u - 0.27) * boy * 0.09;
+      const x0 = Math.max(0, Math.round(f.x - g)), x1 = Math.min(W - 1, Math.round(f.x + g));
+      for (let x = x0; x <= x1; x++) cikis[y * W + x] = kara;
+    }
+    if (f.goz !== false && boy >= 8) {
+      const gy = Math.round(tepe + boy * 0.1), ara = Math.max(1, Math.round(bas * 0.5));
+      [-ara, ara].forEach((d) => {
+        const gx = Math.round(f.x) + d, n = gy * W + gx;
+        // Kızılötesinde göz geri parlar. Siyah beyaz kamerada kırmızı olmaz.
+        const parlak = gri ? 0xffffffff : RENK.kor;
+        if (gx >= 0 && gx < W && gy >= 0 && gy < H) cikis[n] = parlak;
+        if (boy >= 34 && gx + 1 < W) cikis[n + 1] = parlak;
+      });
+    }
+  }
+
+  // ---------- bağlantı hatası: hem bir an, hem son ----------
+  function oluSayfa(sec) {
+    const s = sec || {};
+    const e = document.createElement('div');
+    e.id = 'olu';
+    const baslik = document.createElement('h1');
+    baslik.textContent = 'Onionsite Not Found';
+    const a = document.createElement('p');
+    a.textContent = `An error occurred during a connection to ${onion()}.`;
+    const d = document.createElement('p');
+    d.id = 'olu-ayrinti';
+    d.textContent = "Details: 0xF0 — The requested onion service descriptor can't be found on the hashring and therefore the service is not reachable by the client.";
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Try Again';
+    e.append(baslik, a, d, b);
+    if (s.son) {
+      const k = document.createElement('p');
+      k.id = 'olu-sil';
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.textContent = 'kaydımı sil';
+      t.addEventListener('click', () => { unut(); location.reload(); });
+      k.append(t);
+      e.append(k);
+      b.addEventListener('click', () => {
+        d.textContent = 'Details: 0xF0 — tamam.';
+      });
+    }
+    return { e, baslik, d, b };
   }
 
   // ---------- modüller arası haberleşme ----------
@@ -198,6 +342,6 @@ window.Ortak = (function () {
 
   return {
     azalt, RENK, CSS_RENK, BAYER, depo, kayit, unut, kimlik, dinle, yay, javaHash,
-    portreResmi, griOrnekle, atkinson, dikisResmi, kalem, muhur,
+    portreResmi, griOrnekle, atkinson, dikisResmi, kalem, muhur, onion, misafir, kameraHarita, kameraCiz, oluSayfa,
   };
 })();

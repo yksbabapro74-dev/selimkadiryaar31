@@ -33,7 +33,7 @@
     const bolum = $('#karakter');
     const baslik = bolum.querySelector('.baslik'), alt = bolum.querySelector('.alt-baslik'), kart = bolum.querySelector('.kart');
     const parcalar = [[baslik, 0.3], [alt, 0.46], [kart, 0.62]];
-    const yapiskan = () => matchMedia('(min-width:1021px)').matches;
+    const yapiskan = () => false;
     // Gözlük camlarının kaynak resimdeki yeri (kesir)
     const CAM = [[0.318, 0.567], [0.661, 0.579]];
     let gri = null, resim = null, g = 0, y = 0, v = null, cikis = null, sonP = -1, bekliyor = false;

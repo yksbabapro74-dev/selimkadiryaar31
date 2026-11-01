@@ -905,7 +905,7 @@
     });
     ac.addEventListener('click', async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        okuma.textContent = 'Ayna bu adreste açılmıyor: tarayıcı güvenli bağlantı istiyor. O yine de görüyor.';
+        okuma.textContent = 'Ayna bu adreste açılmıyor: tarayıcı güvenli bağlantı istiyor.';
         return;
       }
       ac.disabled = true;
@@ -913,7 +913,7 @@
       try {
         akim = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false });
       } catch (e) {
-        okuma.textContent = 'Aynayı açmadın. Akıllıca. O seni zaten görüyordu.';
+        okuma.textContent = 'Aynayı açmadın. Peki. Seni çizeriz.';
         ac.disabled = false;
         return;
       }

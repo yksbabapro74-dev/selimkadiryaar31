@@ -3,6 +3,7 @@ User-agent: *
 Disallow: /assets/
 
 # Özellikle buralara bakılmasın.
+Disallow: /kat31
 Disallow: /defter
 Disallow: /sessizoda
 Disallow: /arsiv

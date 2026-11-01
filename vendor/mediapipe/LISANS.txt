@@ -1,0 +1,9 @@
+Bu klasördeki dosyalar Google MediaPipe projesinden alınmıştır: @mediapipe/tasks-vision 1.2.0,
+face_landmarker ve selfie_segmenter modelleri. Lisans: Apache License 2.0.
+https://www.apache.org/licenses/LICENSE-2.0
+https://github.com/google-ai-edge/mediapipe
+
+Tek değişiklik: vision_bundle.mjs içinde kütüphanenin Google'a başarım istatistiği yollayan günlüğü (flush) kapatıldı;
+bu sitede hiçbir veri dışarı çıkmasın diye. Görüntü zaten o günlükte yoktu. Geri kalan dosyalar değiştirilmedi.
+Model ve çalışma dosyaları yalnızca kamerayı açan ziyaretçinin tarayıcısına iner.
+Görüntü işleme tarayıcının içinde yapılır; hiçbir görüntü bir yere gönderilmez.

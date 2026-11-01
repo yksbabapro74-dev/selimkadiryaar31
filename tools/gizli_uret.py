@@ -48,6 +48,46 @@ def kimlik(kod):
     return hashlib.sha256(('kapi:' + TUZ + kod).encode('utf-8')).hexdigest()[:24]
 
 
+def gorsel_sifrele(ham, kod, ad):
+    anahtar = hashlib.sha256(('gorsel:' + TUZ + kod + ':' + ad).encode('utf-8')).digest()
+    cik = bytearray()
+    for sayac in range((len(ham) + 31) // 32):
+        akis = hashlib.sha256(anahtar + sayac.to_bytes(4, 'big')).digest()
+        parca = ham[sayac * 32:(sayac + 1) * 32]
+        cik.extend(a ^ b for a, b in zip(parca, akis))
+    return bytes(cik)
+
+
+def gorsel_adi(kod, ad):
+    return hashlib.sha256(('dosya:' + TUZ + kod + ':' + ad).encode('utf-8')).hexdigest()[:20] + '.bin'
+
+
+def gorseller_uret():
+    """tools/gizli_kaynak/gorsel/<kod>/<ad>.jpg -> assets/g/<özet>.bin. Kodu bilmeyen dosyanın ne olduğunu da bilemez."""
+    kok = os.path.join(KAYNAK, 'gorsel')
+    cikti = os.path.join(KOK, 'assets', 'g')
+    if not os.path.isdir(kok):
+        return
+    os.makedirs(cikti, exist_ok=True)
+    gecerli = set()
+    for kod in sorted(os.listdir(kok)):
+        klasor = os.path.join(kok, kod)
+        if not os.path.isdir(klasor):
+            continue
+        for ad in sorted(os.listdir(klasor)):
+            taban = os.path.splitext(ad)[0]
+            hedef = gorsel_adi(kod_sade(kod), taban)
+            gecerli.add(hedef)
+            with open(os.path.join(klasor, ad), 'rb') as f:
+                ham = f.read()
+            with open(os.path.join(cikti, hedef), 'wb') as f:
+                f.write(gorsel_sifrele(ham, kod_sade(kod), taban))
+    for ad in os.listdir(cikti):
+        if ad not in gecerli:
+            os.remove(os.path.join(cikti, ad))
+    print(f'{len(gecerli)} şifreli görsel: {cikti}')
+
+
 def sayfa_oku(yol):
     s = open(yol, encoding='utf-8').read()
     baslik = re.search(r'<!--\s*baslik:(.*?)-->', s)
@@ -84,6 +124,7 @@ def uret():
         f.write('// tools/gizli_uret.py üretti. Elle değiştirme. Kodu olmayan bunu okuyamaz.\n')
         f.write('window.GIZLI=' + veri + ';\n')
     print(f'{len(kat)} kapı yazıldı ({os.path.getsize(CIKTI)} bayt): {CIKTI}')
+    gorseller_uret()
 
 
 def sifre_degistir(yeni):

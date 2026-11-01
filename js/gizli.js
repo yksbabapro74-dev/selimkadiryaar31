@@ -13,7 +13,7 @@
   const $ = (s) => document.querySelector(s);
   const kat = $('#kat'), kapi = $('#kat-kapi'), yukari = $('#kat-yukari'), sesDugme = $('#ses-dugme');
   const dosya = location.protocol === 'file:';
-  const kokAdres = dosya ? 'index.html' : './';
+  const kokAdres = 'kat31.html';
   const bag = (k) => (dosya ? `404.html?k=${encodeURIComponent(k)}` : encodeURIComponent(k));
 
   function hamYol() {
@@ -53,6 +53,58 @@
     return l;
   }
 
+  // Şifreli görsel: indirilir, burada çözülür, sekmede kalır. Kodu bilmeyen dosyanın ne olduğunu bilemez.
+  async function gorselCoz(ad) {
+    const dosyaAd = S.hex(S.ozet(S.utf8('dosya:' + V.tuz + kod + ':' + ad))).slice(0, 20) + '.bin';
+    const r = await fetch('assets/g/' + dosyaAd);
+    if (!r.ok) throw new Error('görsel yok');
+    const girdi = new Uint8Array(await r.arrayBuffer());
+    const anahtar = S.ozet(S.utf8('gorsel:' + V.tuz + kod + ':' + ad));
+    const blok = new Uint8Array(36);
+    blok.set(anahtar, 0);
+    const cik = new Uint8Array(girdi.length);
+    for (let i = 0, sayac = 0; i < girdi.length; sayac++) {
+      blok[32] = sayac >>> 24;
+      blok[33] = (sayac >>> 16) & 255;
+      blok[34] = (sayac >>> 8) & 255;
+      blok[35] = sayac & 255;
+      const akis = S.ozet(blok);
+      for (let j = 0; j < 32 && i < girdi.length; j++, i++) cik[i] = girdi[i] ^ akis[j];
+    }
+    return URL.createObjectURL(new Blob([cik], { type: 'image/jpeg' }));
+  }
+  // <figure data-gorsel="ad" data-soz="...">: kapalı gelir. Bakmak senin kararın.
+  function gorselKur() {
+    kat.querySelectorAll('[data-gorsel]').forEach((f) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'kg-ac';
+      b.textContent = f.dataset.dugme || 'aç';
+      f.prepend(b);
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        b.textContent = '…';
+        try {
+          if (!O.azalt) {
+            Ses.ters(1.1, 0.16);
+            await G.uyu(1100);
+          }
+          const url = await gorselCoz(f.dataset.gorsel);
+          const i = document.createElement('img');
+          i.src = url;
+          i.alt = f.dataset.alt || '';
+          i.className = 'kg-resim';
+          b.replaceWith(i);
+          f.classList.add('acik');
+          if (f.dataset.ses) Ses.kayit(f.dataset.ses, { x: 0.25, z: 0.22, ses: 0.6 });
+        } catch (e) {
+          b.disabled = false;
+          b.textContent = 'açılmadı, yine dene';
+        }
+      });
+    });
+  }
+
   let portreSoz = null;
   const G = {
     O, Ses, S, kod, kat, depo, bag,
@@ -67,6 +119,16 @@
     katlar: () => listeOku('katlar'),
     denenen: () => listeOku('denenen'),
     parmaklar: () => listeOku('parmak'),
+    // Ses ancak bir dokunuştan sonra açılır: açık değilse ilk açıldığı an çalışır. Bir kez.
+    sesle(f) {
+      if (Ses.acikMi()) { f(); return; }
+      let oldu = false;
+      O.dinle('ses', (a) => {
+        if (!a || oldu) return;
+        oldu = true;
+        f();
+      });
+    },
     // Beş parmak: her biri bir katta açılır. Söylemez, bir kere fısıldar.
     parmak(ad) {
       const l = listeOku('parmak');
@@ -131,6 +193,7 @@
     kat.innerHTML = v.h;
     kat.querySelectorAll('[data-kod]').forEach((a) => { a.href = bag(a.dataset.kod); });
     kat.querySelectorAll('[data-kok]').forEach((a) => { a.href = kokAdres; });
+    gorselKur();
     if (v.j) new Function('G', v.j)(G);
   }
 

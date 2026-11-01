@@ -208,7 +208,7 @@ window.Ses = (function () {
     tikYol.connect(tikIslak);
     tikIslak.connect(konv);
 
-    let basladi = false;
+    let basladi = false, separdK = null, kumeD = null, cinD = null;
     return {
       basla(t) {
         if (basladi) return;
@@ -358,6 +358,459 @@ window.Ses = (function () {
       nefesKes() {
         nefesYol.gain.cancelScheduledValues(simdi());
         nefesYol.gain.setTargetAtTime(0, simdi(), 0.015);
+      },
+      nefesAc() {
+        nefesYol.gain.cancelScheduledValues(simdi());
+        nefesYol.gain.setValueAtTime(1, simdi() + 0.05);
+      },
+      // Kare dalga, tek ses. Notalar MIDI numarası; adim: bir birimin saniyesi.
+      midi(notalar, adim, kent, ses, yol) {
+        const b = simdi() + 0.05;
+        const y = yol || (() => { const k = g(1); k.connect(kuru); return k; })();
+        y.gain.cancelScheduledValues(b);
+        y.gain.setValueAtTime(1, b);
+        let z = b;
+        notalar.forEach(([n, u]) => {
+          const sure = u * adim;
+          const o = c.createOscillator();
+          o.type = 'square';
+          o.frequency.value = 440 * 2 ** ((n - 69) / 12);
+          o.detune.value = kent || 0;
+          const e = c.createGain();
+          e.gain.setValueAtTime(0, z);
+          e.gain.linearRampToValueAtTime(ses, z + 0.008);
+          e.gain.setValueAtTime(ses * 0.8, z + sure * 0.55);
+          e.gain.linearRampToValueAtTime(0.0001, z + sure * 0.92);
+          o.connect(e);
+          e.connect(y);
+          o.start(z);
+          o.stop(z + sure);
+          z += sure;
+        });
+        return y;
+      },
+      // --- gerçek kayıtlar (assets/ses/kayit, CC0) ---
+      // x sağ omuz, z arka. s.yol: 'nefes' nefes yoluna, 'delen' sessizliği deler, verilmezse yakın yola.
+      kayit(buf, s, t) {
+        const b = t === undefined ? simdi() : t;
+        const k = c.createBufferSource();
+        k.buffer = buf;
+        if (s.hiz) k.playbackRate.value = s.hiz;
+        if (s.dongu) k.loop = true;
+        const e = c.createGain();
+        const ses = s.ses === undefined ? 0.5 : s.ses;
+        e.gain.setValueAtTime(s.gir ? 0.0001 : ses, b);
+        if (s.gir) e.gain.exponentialRampToValueAtTime(Math.max(0.0002, ses), b + s.gir);
+        k.connect(e);
+        const hedef = s.yol === 'nefes' ? nefesYol : s.yol === 'delen' ? delen : s.yol === 'oda' ? kuru : yakin;
+        let cikis = e;
+        if (s.x !== undefined || s.z !== undefined) {
+          const p = uzayda(s.x || 0, s.y || 0, s.z === undefined ? 0.4 : s.z, b);
+          p.refDistance = s.ref || 0.45;
+          e.connect(p);
+          cikis = p;
+          if (s.x1 !== undefined && p.positionX && s.sure) {
+            p.positionX.linearRampToValueAtTime(s.x1, b + s.sure);
+            p.positionZ.linearRampToValueAtTime(s.z1 === undefined ? s.z : s.z1, b + s.sure);
+          }
+        }
+        cikis.connect(hedef);
+        if (s.yanki) {
+          const y = g(s.yanki);
+          cikis.connect(y);
+          y.connect(konv);
+        }
+        k.start(b, s.ofset || 0, s.dongu ? undefined : s.sure);
+        return () => {
+          const n = simdi();
+          e.gain.cancelScheduledValues(n);
+          e.gain.setTargetAtTime(0, n, 0.03);
+          try { k.stop(n + 0.3); } catch (h) { /* zaten bitti */ }
+        };
+      },
+      // Hiç bitmeyen iniş: Shepard-Risset. Sürekli alçalır, hiç inmez. Ses yoksa çağrı boşa gider.
+      separd(ses) {
+        const b = simdi();
+        if (!separdK) {
+          const T = 9, N = 7, SR = 22050, fc = 196, sg = 1.15;
+          const uz = Math.floor(T * SR);
+          const tam = c.createBuffer(1, uz, SR);
+          const d = tam.getChannelData(0);
+          const fmax = fc * 2 ** (N / 2);
+          for (let k = 0; k < N; k++) {
+            for (let i = 0; i < uz; i++) {
+              const u = i / SR + k * T;
+              const f = fmax * 2 ** (-u / T);
+              const fi = (2 * Math.PI * fmax * T / Math.LN2) * (1 - 2 ** (-u / T));
+              const l = Math.log2(f / fc);
+              const w = Math.exp(-(l * l) / (2 * sg * sg)) * Math.sin(Math.PI * u / (N * T)) ** 2;
+              d[i] += w * Math.sin(fi);
+            }
+          }
+          let tepe = 0;
+          for (let i = 0; i < uz; i++) tepe = Math.max(tepe, Math.abs(d[i]));
+          for (let i = 0; i < uz; i++) d[i] /= tepe || 1;
+          separdK = g(0);
+          separdK.connect(kuru);
+          const yk = g(0.5);
+          separdK.connect(yk);
+          yk.connect(konv);
+          // İki kopya, çok az farklı hızda: birbirini yavaşça döver.
+          [1, 1.0043].forEach((h, n) => {
+            const k = c.createBufferSource();
+            k.buffer = tam;
+            k.loop = true;
+            k.playbackRate.value = h;
+            const q = g(0.5);
+            const pan = c.createStereoPanner();
+            pan.pan.value = n ? 0.45 : -0.45;
+            k.connect(q);
+            q.connect(pan);
+            pan.connect(separdK);
+            k.start(b);
+          });
+        }
+        separdK.gain.cancelScheduledValues(b);
+        separdK.gain.setTargetAtTime(ses, b, ses > 0 ? 2.4 : 0.9);
+      },
+      // Küme: on iki ses, «ı» ünlüsünde, birbirine hiç oturmuyor. p yükseldikçe sıklaşır ve pürüzlenir.
+      kume(p) {
+        const b = simdi();
+        if (!kumeD) {
+          const top = g(0);
+          const puruzK = g(1);
+          const giris = g(1);
+          [[360, 7, 1], [1740, 13, 0.7], [2460, 15, 0.42]].forEach(([f, q, k]) => {
+            const bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.value = f;
+            bp.Q.value = q;
+            const m = g(k);
+            giris.connect(bp);
+            bp.connect(m);
+            m.connect(puruzK);
+          });
+          puruzK.connect(top);
+          const yanki = g(0.9);
+          top.connect(g(0.6)).connect(kuru);
+          top.connect(yanki);
+          yanki.connect(konv);
+          // Pürüz: 30-150 Hz arası genlik titremesi. Çığlığın oturduğu yer burası (Arnal vd., 2015).
+          const puruz = c.createOscillator();
+          puruz.frequency.value = 53;
+          const puruzD = g(0);
+          puruz.connect(puruzD);
+          puruzD.connect(puruzK.gain);
+          puruz.start(b);
+          const sesler = [];
+          for (let i = 0; i < 12; i++) {
+            const o = c.createOscillator();
+            o.type = 'sawtooth';
+            o.frequency.value = 150 * 2 ** (Math.random() * 1.4);
+            const k = g(0.085);
+            o.connect(k);
+            k.connect(giris);
+            o.start(b);
+            sesler.push(o);
+          }
+          kumeD = { top, puruz, puruzD, sesler, p: 0 };
+          const kaydir = () => {
+            const n = simdi();
+            const tavan = 1 + kumeD.p * 1.2;
+            sesler.forEach((o) => {
+              o.frequency.setTargetAtTime(150 * 2 ** (Math.random() * tavan), n, 2.2 + Math.random() * 3);
+            });
+            puruz.frequency.setTargetAtTime(34 + Math.random() * 46, n, 1.5);
+          };
+          kaydir();
+          kumeD.z = setInterval(kaydir, 5200);
+        }
+        kumeD.p = p;
+        kumeD.top.gain.cancelScheduledValues(b);
+        kumeD.top.gain.setTargetAtTime(p * 0.62, b, p > 0 ? 1.6 : 0.35);
+        kumeD.puruzD.gain.setTargetAtTime(Math.max(0, p - 0.45) * 1.1, b, 1.4);
+      },
+      // Kulak çınlaması. Sağ ve sol biraz farklı. Çok kısık: yüksek değil, tuhaf olması gerekir.
+      cinlama(p) {
+        const b = simdi();
+        if (!cinD) {
+          const top = g(0);
+          top.connect(yakin);
+          [[6870, -0.8], [6912, 0.8]].forEach(([f, pan]) => {
+            const o = c.createOscillator();
+            o.frequency.value = f;
+            const pn = c.createStereoPanner();
+            pn.pan.value = pan;
+            o.connect(pn);
+            pn.connect(top);
+            o.start(b);
+          });
+          cinD = top;
+        }
+        cinD.gain.cancelScheduledValues(b);
+        cinD.gain.setTargetAtTime(Math.min(1, p) * 0.0085, b, p > 0 ? 2.2 : 0.02);
+      },
+      // Çığlığın kaba tınısı, sessizce. Ses yüksek değil, sinir bozucu.
+      purus(sure, ses, pan, t) {
+        const b = t === undefined ? simdi() : t;
+        const e = g(0);
+        const am = g(0.5);
+        const lfo = c.createOscillator();
+        lfo.frequency.setValueAtTime(38, b);
+        lfo.frequency.linearRampToValueAtTime(92, b + sure);
+        const lk = g(0.5);
+        lfo.connect(lk);
+        lk.connect(am.gain);
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(820, b);
+        bp.frequency.linearRampToValueAtTime(1480, b + sure);
+        bp.Q.value = 2.2;
+        const pn = c.createStereoPanner();
+        pn.pan.value = pan || 0;
+        [233.08, 246.94, 329.63].forEach((f) => {
+          const o = c.createOscillator();
+          o.type = 'sawtooth';
+          o.frequency.value = f;
+          o.connect(bp);
+          o.start(b);
+          o.stop(b + sure + 0.2);
+        });
+        lfo.start(b);
+        lfo.stop(b + sure + 0.2);
+        bp.connect(am);
+        am.connect(e);
+        e.connect(pn);
+        pn.connect(kuru);
+        e.gain.setValueAtTime(0.0001, b);
+        e.gain.exponentialRampToValueAtTime(ses, b + sure * 0.7);
+        e.gain.linearRampToValueAtTime(0, b + sure);
+      },
+      // Tersine bir nefes alma: büyür büyür, kesilir. Arkasından hiçbir şey gelmez.
+      ters(sure, ses, t) {
+        const b = t === undefined ? simdi() : t;
+        const e = g(0);
+        e.connect(kuru);
+        const y = g(0.8);
+        e.connect(y);
+        y.connect(konv);
+        const s = c.createBufferSource();
+        s.buffer = beyaz;
+        s.loop = true;
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.Q.value = 1.1;
+        bp.frequency.setValueAtTime(180, b);
+        bp.frequency.exponentialRampToValueAtTime(3200, b + sure);
+        s.connect(bp);
+        bp.connect(e);
+        [55, 77.78, 116.54, 164.81].forEach((f) => {
+          const o = c.createOscillator();
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(f * 0.5, b);
+          o.frequency.exponentialRampToValueAtTime(f, b + sure);
+          const k = g(0.22);
+          o.connect(k);
+          k.connect(e);
+          o.start(b);
+          o.stop(b + sure + 0.01);
+        });
+        e.gain.setValueAtTime(0.0002, b);
+        e.gain.exponentialRampToValueAtTime(ses, b + sure);
+        e.gain.setValueAtTime(0, b + sure + 0.004);
+        s.start(b);
+        s.stop(b + sure + 0.02);
+      },
+      // Müzik kutusu. Her dişte biraz daha yavaş, biraz daha yanlış. Bazı dişler kırık.
+      kutu(notalar, sec, t) {
+        const b = t === undefined ? simdi() + 0.05 : t;
+        const s = sec || {};
+        const yol = g(s.ses === undefined ? 0.16 : s.ses);
+        yol.connect(kuru);
+        const y = g(0.55);
+        yol.connect(y);
+        y.connect(konv);
+        let z = b, adim = s.adim || 0.26, sap = 0, kirik = s.kirik || 0;
+        const tur = s.tur || 4;
+        const durdurucu = [];
+        for (let u = 0; u < tur; u++) {
+          notalar.forEach(([n, d]) => {
+            sap -= 1.5 + Math.random() * 1.6;
+            adim *= s.yavas || 1.006;
+            kirik = Math.min(0.42, kirik + 0.0026);
+            if (n && Math.random() > kirik) {
+              const f = 440 * 2 ** ((n - 69) / 12) * 2 ** ((sap + (Math.random() - 0.5) * (6 + u * 12)) / 1200);
+              [[1, 0.7, 1.5], [3.01, 0.2, 0.5], [6.27, 0.08, 0.16]].forEach(([r, a, tt]) => {
+                const o = c.createOscillator();
+                o.frequency.value = f * r;
+                const e = c.createGain();
+                e.gain.setValueAtTime(0, z);
+                e.gain.linearRampToValueAtTime(a, z + 0.003);
+                e.gain.exponentialRampToValueAtTime(0.0001, z + tt);
+                o.connect(e);
+                e.connect(yol);
+                o.start(z);
+                o.stop(z + tt + 0.05);
+                durdurucu.push(o);
+              });
+            }
+            z += d * adim;
+          });
+        }
+        return {
+          sure: z - b,
+          dur: () => {
+            yol.gain.cancelScheduledValues(simdi());
+            yol.gain.setTargetAtTime(0, simdi(), 0.08);
+          },
+        };
+      },
+      // Gramofon: dar bant, ağır vals. İğne kalkınca plak yavaşlayıp durur.
+      gramofon(notalar, sec) {
+        const s = sec || {};
+        const b = simdi() + 0.05;
+        const top = g(s.ses === undefined ? 0.24 : s.ses);
+        const hp = c.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 340;
+        const lp = c.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 2500;
+        const biz = c.createWaveShaper();
+        const egri = new Float32Array(257);
+        for (let i = 0; i < 257; i++) {
+          const x = (i - 128) / 128;
+          egri[i] = Math.tanh(x * 2.4);
+        }
+        biz.curve = egri;
+        const giris = g(0.5);
+        giris.connect(biz);
+        biz.connect(hp);
+        hp.connect(lp);
+        lp.connect(top);
+        top.connect(kuru);
+        const y = g(0.35);
+        top.connect(y);
+        y.connect(konv);
+        // Her notanın kentini sürükleyen tek kaynak: titreme (wow) ve son duruş.
+        const kent = c.createConstantSource ? c.createConstantSource() : null;
+        const wowK = g(19);
+        const wow = c.createOscillator();
+        wow.frequency.value = 0.55;
+        wow.connect(wowK);
+        if (kent) {
+          kent.offset.value = s.kent || 0;
+          kent.start(b);
+          wowK.connect(kent.offset);
+        }
+        wow.start(b);
+        let z = b;
+        const adim = s.adim || 0.5, tur = s.tur || 6;
+        for (let u = 0; u < tur; u++) {
+          notalar.forEach(([n, d, n2]) => {
+            [n, n2].forEach((m, ic) => {
+              if (!m) return;
+              const o = c.createOscillator();
+              o.type = 'triangle';
+              o.frequency.value = 440 * 2 ** ((m - 69) / 12);
+              if (kent) kent.connect(o.detune);
+              const e = c.createGain();
+              const a = ic ? 0.32 : 0.6;
+              e.gain.setValueAtTime(0, z);
+              e.gain.linearRampToValueAtTime(a, z + 0.03);
+              e.gain.setTargetAtTime(a * 0.25, z + 0.06, d * adim * 0.5);
+              e.gain.setTargetAtTime(0, z + d * adim * 0.85, 0.04);
+              o.connect(e);
+              e.connect(giris);
+              o.start(z);
+              o.stop(z + d * adim + 0.3);
+            });
+            z += d * adim;
+          });
+        }
+        return {
+          // Elle durdurulan plak: bir buçuk saniyede sürüklenip biter.
+          dur: (hizli) => {
+            const n = simdi(), sn = hizli ? 0.35 : 1.6;
+            if (kent) {
+              kent.offset.cancelScheduledValues(n);
+              kent.offset.setValueAtTime(s.kent || 0, n);
+              kent.offset.linearRampToValueAtTime(-3600, n + sn);
+            }
+            top.gain.cancelScheduledValues(n);
+            top.gain.setValueAtTime(top.gain.value, n);
+            top.gain.linearRampToValueAtTime(0, n + sn);
+          },
+        };
+      },
+      // 2004: hat çevriliyor.
+      modem(t) {
+        const b = t === undefined ? simdi() + 0.05 : t;
+        const yol = g(0.05);
+        yol.connect(kuru);
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 1500;
+        bp.Q.value = 0.5;
+        bp.connect(yol);
+        const ton = (f, b0, sure, a) => {
+          const o = c.createOscillator();
+          o.frequency.value = f;
+          const e = c.createGain();
+          e.gain.setValueAtTime(a, b0);
+          e.gain.setValueAtTime(0, b0 + sure);
+          o.connect(e);
+          e.connect(bp);
+          o.start(b0);
+          o.stop(b0 + sure + 0.02);
+        };
+        const DT = [[697, 1336], [770, 1209], [852, 1477], [941, 1336], [697, 1209], [770, 1477], [852, 1209]];
+        DT.forEach(([f1, f2], i) => {
+          ton(f1, b + i * 0.12, 0.08, 0.7);
+          ton(f2, b + i * 0.12, 0.08, 0.7);
+        });
+        const z = b + DT.length * 0.12 + 0.4;
+        ton(2100, z, 0.9, 0.7);
+        ton(1200, z + 1, 0.3, 0.7);
+        ton(2400, z + 1.3, 0.3, 0.7);
+        const s = c.createBufferSource();
+        s.buffer = beyaz;
+        const e = c.createGain();
+        e.gain.setValueAtTime(0.5, z + 1.7);
+        e.gain.setValueAtTime(0, z + 3.2);
+        s.connect(e);
+        e.connect(bp);
+        s.start(z + 1.7, 0, 1.6);
+      },
+      arkadanVer(akim, gecikme, ses) {
+        const b = simdi();
+        const kaynak = c.createMediaStreamSource(akim);
+        const hp = c.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 180;
+        const lp = c.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 3400;
+        const sik = c.createDynamicsCompressor();
+        sik.threshold.value = -38;
+        sik.ratio.value = 8;
+        const gec = c.createDelay(Math.max(1, gecikme + 1));
+        gec.delayTime.value = gecikme;
+        const p = uzayda(0.18, 0, 0.5, b);
+        const e = c.createGain();
+        e.gain.setValueAtTime(0, b);
+        e.gain.setTargetAtTime(ses, b, 1.2);
+        kaynak.connect(hp);
+        hp.connect(lp);
+        lp.connect(sik);
+        sik.connect(gec);
+        gec.connect(e);
+        e.connect(p);
+        p.connect(yakin);
+        return () => {
+          e.gain.setTargetAtTime(0, simdi(), 0.05);
+          setTimeout(() => { try { kaynak.disconnect(); e.disconnect(); p.disconnect(); } catch (h) { /* zaten koptu */ } }, 400);
+        };
       },
       yukselt(p, t) {
         const b = t === undefined ? simdi() : t;
@@ -558,7 +1011,7 @@ window.Ses = (function () {
   }
 
   // ---------- canlı katman ----------
-  let c = null, motor = null, acik = false, derin = 0, sonHareket = 0, kalpZaman = 0, tikBitis = 0;
+  let c = null, motor = null, acik = false, derin = 0, sonHareket = 0, kalpZaman = 0, tikBitis = 0, midiYol = null;
 
   function hayat() {
     // Hiç kıpırdamadan duran birini duymaya başlarsın.
@@ -595,6 +1048,23 @@ window.Ses = (function () {
     });
   }
 
+  // Gerçek kayıtlar arkadan, sırayla iner. İnmediyse sentez ya da sessizlik: sayfa beklemez.
+  const KAYITLAR = ['adim1', 'adim2', 'adim3', 'adim4', 'adimu1', 'adimu2', 'tokez', 'nefes', 'nefes2', 'soluk', 'panik', 'kokla', 'sus',
+    'ciglik', 'yutkun', 'gulp', 'omuz', 'kazima', 'kazima2', 'vur', 'kumas1', 'kumas2', 'kalem', 'sayfa', 'plak', 'fis', 'titresim', 'fare', 'cagri', 'saat'];
+  const tampon = {};
+  let yuklendi = false;
+  async function kayitYukle() {
+    if (yuklendi || !window.fetch || location.protocol === 'file:') return;
+    yuklendi = true;
+    for (const ad of KAYITLAR) {
+      try {
+        const r = await fetch(`assets/ses/kayit/${ad}.mp3`);
+        if (r.ok) tampon[ad] = await c.decodeAudioData(await r.arrayBuffer());
+      } catch (e) { /* bu kayıt yok sayılır */ }
+    }
+  }
+  const kayitCal = (ad, s, t) => (tampon[ad] && acik && motor ? motor.kayit(tampon[ad], s || {}, t) : null);
+
   // Jest içinde çağrılır.
   function uyan() {
     if (!AC) return false;
@@ -603,6 +1073,7 @@ window.Ses = (function () {
       motor = Motor(c);
       motor.basla();
       hayat();
+      kayitYukle();
     }
     if (c.state === 'suspended') c.resume();
     acik = true;
@@ -638,7 +1109,11 @@ window.Ses = (function () {
     can: canli((f, sure, ses) => motor.can(f || 174.61, sure || 9, ses === undefined ? 0.55 : ses)),
     tik: canli((ses) => motor.tik(Math.random() * 0.6 - 0.3, ses || 0.35)),
     fisilti: canli((sure) => motor.fisilti(Math.random() * 1.6 - 0.8, sure || 2)),
-    cigilik: canli((ses) => motor.cigilik(ses === undefined ? 0.9 : ses)),
+    cigilik: canli((ses) => {
+      motor.cigilik(ses === undefined ? 0.9 : ses);
+      // Sentezin altına gerçek bir boğaz.
+      if (tampon.ciglik) motor.kayit(tampon.ciglik, { ses: (ses === undefined ? 0.9 : ses) * 0.2, yol: 'delen' });
+    }),
     parazit: canli((sure, ses) => motor.parazit(sure || 1, ses === undefined ? 0.14 : ses)),
     vurus: canli((guc) => motor.vurus(guc || 0.8)),
     kalp: canli(kalp),
@@ -661,13 +1136,46 @@ window.Ses = (function () {
     adimlar: canli((x, z, ses, adet) => {
       const n = adet || 3, t = c.currentTime;
       for (let i = 0; i < n; i++) {
-        const k = 1 + (n - 1 - i) * 0.09;
-        motor.adim(x * k, z * k, ses, t + i * (0.58 + Math.random() * 0.1));
+        const k = 1 + (n - 1 - i) * 0.09, an = t + i * (0.62 + Math.random() * 0.12);
+        const uzak = Math.hypot(x, z) > 3.2;
+        const ad = uzak ? `adimu${1 + Math.floor(Math.random() * 2)}` : `adim${1 + Math.floor(Math.random() * 4)}`;
+        if (tampon[ad]) motor.kayit(tampon[ad], { x: x * k, y: -0.9, z: z * k, ses: ses * 1.5, ref: 1.5, yanki: Math.min(0.32, Math.hypot(x, z) * 0.07), hiz: 0.92 + Math.random() * 0.12 }, an);
+        else motor.adim(x * k, z * k, ses, an);
       }
     }),
     kapiVur: canli((x, z) => motor.kapiVur(x, z)),
-    nefesle: canli((adet) => motor.nefesle(adet)),
+    nefesle: canli((adet) => {
+      if (!tampon.nefes) {
+        motor.nefesle(adet);
+        return;
+      }
+      // Kaydın ağır kısmı: sol omuzdan sağ omuza geçer, git gide yakın.
+      motor.nefesKes();
+      motor.nefesAc();
+      motor.kayit(tampon.nefes, { x: -0.46, z: 0.44, x1: 0.3, z1: 0.24, sure: Math.min(9.5, adet * 3.5), ofset: 10, ses: 0.72, yol: 'nefes' });
+    }),
     nefesKes: canli(() => motor.nefesKes()),
+    // Eski bir sayfanın müziği. Her turda biraz daha yavaş, biraz daha pes.
+    midi: canli((notalar, adim, kent, ses) => {
+      midiYol = motor.midi(notalar, adim, kent, ses, midiYol);
+    }),
+    midiKes: canli(() => {
+      if (midiYol) midiYol.gain.setTargetAtTime(0, c.currentTime, 0.04);
+      midiYol = null;
+    }),
+    // Gerçek kayıt. Durduran işlev döner; ses kapalıysa ya da kayıt inmediyse null.
+    kayit: kayitCal,
+    // Kirli ince sesler: alçak, sinir bozucu. Ayrıntı motorda.
+    separd: canli((ses) => motor.separd(ses)),
+    kume: canli((p) => motor.kume(p)),
+    cinlama: canli((p) => motor.cinlama(p)),
+    purus: canli((sure, ses, pan) => motor.purus(sure, ses, pan)),
+    ters: canli((sure, ses) => motor.ters(sure, ses)),
+    kutu: canli((notalar, sec) => motor.kutu(notalar, sec)),
+    gramofon: canli((notalar, sec) => motor.gramofon(notalar, sec)),
+    modem: canli(() => motor.modem()),
+    // Mikrofonu geciktirip arkadan verir. Kayıt yok, yalnızca gecikme. Yalnızca kulaklıkla çağrılır.
+    arkadanVer: canli((akim, gecikme, ses) => motor.arkadanVer(akim, gecikme, ses)),
     ortamKis: canli((p) => motor.ortamKis(p)),
     sus: canli((sn) => motor.sus(sn || 0.05)),
     don: canli((sn) => motor.don(sn || 2)),

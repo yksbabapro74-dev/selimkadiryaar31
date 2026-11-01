@@ -47,7 +47,7 @@
       ikon.href = GOZ;
       const yaz = () => {
         birakilan++;
-        document.title = `(${birakilan}) ${birakilan === 1 ? 'selimkadiryaar31' : birakilan === 2 ? 'neredesin' : kayit.ad || 'görüldü'}`;
+        document.title = `(${birakilan}) ${O.gerilim.seviye >= 5 ? 'arkanda' : birakilan === 1 ? 'selimkadiryaar31' : birakilan === 2 ? 'neredesin' : kayit.ad || 'görüldü'}`;
       };
       yaz();
       sekmeZaman = setInterval(yaz, 13000);
@@ -95,7 +95,7 @@
     l.forEach((e) => { if (e.isIntersecting && girdi) depo.yaz('sonkat', KAT_AD[e.target.id]); });
   }, { rootMargin: '-50% 0px -50% 0px' });
   $$('[data-kat]').forEach((b) => katGoz.observe(b));
-  const sureKaydet = () => { if (girdi) depo.yaz('sonsure', String(Math.round((performance.now() - girisAn) / 1000))); };
+  const sureKaydet = () => { if (girdi && kayit.gelis) depo.yaz('sonsure', String(Math.round((performance.now() - girisAn) / 1000))); };
   addEventListener('pagehide', sureKaydet);
   document.addEventListener('visibilitychange', () => { if (document.hidden) sureKaydet(); });
 
@@ -170,6 +170,7 @@
       const n = performance.now();
       if (!girdi || document.documentElement.classList.contains('giriste') || n - girisAn < 40000 || n - son < 47000) return;
       if (Math.random() > 0.012) return;
+      if (hazir && !O.olay()) return;
       son = n;
       if (!hazir) {
         hazirla();
@@ -188,7 +189,7 @@
     });
     let kalan = 0;
     setInterval(() => {
-      if (!girdi || document.hidden) return;
+      if (!girdi || document.hidden || O.gerilim.sus) return;
       const k = document.documentElement.classList;
       if (k.contains('giriste') || k.contains('esikte')) return;
       const a = document.activeElement;

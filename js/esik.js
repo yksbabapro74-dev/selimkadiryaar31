@@ -33,7 +33,10 @@
     } else if (gelis >= 1) {
       s.push(ad ? `Yine geldin, ${ad}.` : 'Yine geldin.', `${gelis + 1}. gelişin. Sayılıyor.`);
       const sk = depo.al('sonkat'), dk = Math.round((parseInt(depo.al('sonsure'), 10) || 0) / 60);
-      if (sk) s.push(`Geçen sefer ${dk ? dk + ' dakika kaldın' : 'çabuk kaçtın'}. En son ${sk} bakıyordun.`);
+      let c16 = null;
+      try { c16 = JSON.parse(depo.al('cam16')); } catch (e) { c16 = null; }
+      if (c16 && c16.gor && Date.now() - c16.t > 6e5) s.push('Sen yokken yürüdü.');
+      else if (sk) s.push(`Geçen sefer ${dk ? dk + ' dakika kaldın' : 'çabuk kaçtın'}. En son ${sk} bakıyordun.`);
     } else {
       s.push('Buraya kendi isteğinle geldin.', 'Bunu sonra kendine hatırlat.');
     }

@@ -2,7 +2,7 @@
 // Burada gördüğü her şeyi bu tarayıcıdan okur; hiçbir şey bir yere gönderilmez.
 window.Varlik = (function () {
   'use strict';
-  const { azalt, kayit, dinle } = window.Ortak;
+  const { azalt, kayit, dinle, gerilim, olay } = window.Ortak;
   const Ses = window.Ses;
   const $ = (s) => document.querySelector(s);
   const fis = $('#fisilti'), oYazi = $('#o-durum'), kuyu = $('#kuyu'), titrek = $('#titrek');
@@ -18,7 +18,7 @@ window.Varlik = (function () {
   function fisilda(m, secenek) {
     const s = secenek || {};
     const n = performance.now();
-    if (!girdi || (!s.zorla && (n - sonFis < 17000 || girisGorunur))) return false;
+    if (!girdi || gerilim.sus || (!s.zorla && (n - sonFis < 17000 || girisGorunur))) return false;
     sonFis = n;
     fis.textContent = m;
     fis.classList.add('acik');
@@ -60,7 +60,7 @@ window.Varlik = (function () {
   }
   function yaziyorDongu() {
     setTimeout(() => {
-      if (girdi && !kalici && !document.hidden && !oYazi.classList.contains('acik')) {
+      if (girdi && !kalici && !document.hidden && !gerilim.sus && !oYazi.classList.contains('acik')) {
         const eski = oYazi.textContent;
         oYaz('O: yazıyor…', true);
         setTimeout(() => {
@@ -124,7 +124,7 @@ window.Varlik = (function () {
           const r = b.getBoundingClientRect();
           return r.top > 0 && r.bottom < innerHeight;
         });
-        if (adaylar.length) {
+        if (adaylar.length && olay()) {
           const b = adaylar[0], eski = b.textContent;
           b.textContent = 'Görüldün';
           setTimeout(() => { b.textContent = eski; }, 110);
@@ -137,7 +137,7 @@ window.Varlik = (function () {
   // ---------- mum titremesi: saniyede üçü geçmez ----------
   function titret() {
     setTimeout(() => {
-      if (girdi && !document.hidden) {
+      if (girdi && !document.hidden && olay()) {
         titrek.style.opacity = '0.55';
         setTimeout(() => { titrek.style.opacity = '0'; }, 80);
         setTimeout(() => { titrek.style.opacity = '0.3'; }, 420);
@@ -210,7 +210,7 @@ window.Varlik = (function () {
       return !!e && !e.closest(YASAK);
     };
     function uret() {
-      if (cift.length >= 2 || girisGorunur || document.hidden) return;
+      if (cift.length >= 2 || girisGorunur || document.hidden || gerilim.sus || gerilim.seviye >= 5) return;
       for (let d = 0; d < 14; d++) {
         const x = 30 + Math.random() * (innerWidth - 60), y = 50 + Math.random() * (innerHeight - 100);
         if (Math.hypot(x - imX, y - imY) < 220) continue;

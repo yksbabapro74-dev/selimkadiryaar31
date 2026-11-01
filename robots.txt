@@ -1,6 +1,6 @@
 # Bu dosyayı makineler okur. Sen makine misin?
 User-agent: *
-Disallow: /
+Disallow: /assets/
 
 # Özellikle buralara bakılmasın.
 Disallow: /defter

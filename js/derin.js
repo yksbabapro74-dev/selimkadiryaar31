@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   const O = window.Ortak, Ses = window.Ses, V = window.Varlik;
-  const { azalt, kayit, depo, dinle, yay } = O;
+  const { azalt, kayit, depo, dinle, yay, gerilim } = O;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const iki = (n) => String(n).padStart(2, '0');
@@ -48,6 +48,8 @@
     dizinSenLog(d);
   }
   const logKaydet = () => {
+    // «kaydımı sil» dendiyse sayfa kapanırken geri yazma.
+    if (!kayit.gelis) return;
     try { depo.yaz('log', JSON.stringify(logSatir.slice(-120))); } catch (e) { /* dolu */ }
   };
   addEventListener('pagehide', logKaydet);
@@ -110,7 +112,7 @@
   }
   const sonTepki = {};
   function tepki(ad, bekleme, liste) {
-    if (!girdi || odaDurum !== 'normal') return;
+    if (!girdi || odaDurum !== 'normal' || gerilim.sus) return;
     const n = performance.now();
     if (sonTepki[ad] && n - sonTepki[ad] < bekleme) return;
     sonTepki[ad] = n;
@@ -150,7 +152,7 @@
   ]);
   function kendiliginden() {
     setTimeout(() => {
-      if (girdi && !document.hidden && !kuyruk.length && !kuyrukVar && odaDurum === 'normal' && HAVUZ.length) {
+      if (girdi && !document.hidden && !kuyruk.length && !kuyrukVar && odaDurum === 'normal' && !gerilim.sus && gerilim.seviye < 5 && HAVUZ.length) {
         const s = HAVUZ.shift();
         odaSatir(s[0], s[1]);
       }
@@ -200,7 +202,7 @@
     }
     // Sızıntılar: biri söyler, silinir, atılır.
     setTimeout(() => {
-      if (odaDurum !== 'normal') return;
+      if (odaDurum !== 'normal' || gerilim.sus) return;
       const li = odaSatir('anon_4f2', 'burada anlatılmaz. /tahta\'ya geçin');
       setTimeout(() => {
         li.textContent = '(bu mesaj silindi)';
@@ -211,7 +213,7 @@
       }, azalt ? 2600 : 6200);
     }, 76000);
     setTimeout(() => {
-      if (odaDurum !== 'normal') return;
+      if (odaDurum !== 'normal' || gerilim.sus) return;
       const li = odaSatir('portland81', 'on altı kamera var. 16\'ya bakmayın. /kamera');
       setTimeout(() => {
         li.textContent = '(bu mesaj silindi)';
@@ -230,6 +232,18 @@
       }
     }, 17000);
   }
+
+  // CAM 16 odayla ve günlükle buradan konuşur.
+  dinle('oda-soyle', (l) => { if (odaDurum === 'normal') soyle(l); });
+  dinle('oda-ayril', (ad) => {
+    if (odaDurum !== 'normal') return;
+    sistem(`${ad} ayrıldı.`);
+    uye = Math.max(1, uye - 1);
+    izleyici = Math.max(0, izleyici - 1);
+    sayilar();
+  });
+  dinle('oda-sus', () => { kuyruk.length = 0; });
+  dinle('log', ([kisa, tam]) => logla(kisa, tam));
 
   // Yazarsan.
   let sonMesajLi = null, yazilan = 0;
@@ -377,7 +391,8 @@
     setTimeout(() => { if (odaDurum === 'normal') sinyalKaybi(800); }, 31000);
     // Geri geldiğinde oturan yok.
     setTimeout(() => {
-      if (odaDurum !== 'normal') return;
+      // Zaten yürümeye başladıysa koltuğa bir daha dönmez.
+      if (odaDurum !== 'normal' || gerilim.yuruyor) return;
       sinyalKaybi(1300, () => yay('yayin-figur', 'yok'));
       soyle([[2700, 'anon_b17', 'koltuk boş'], [1400, 'puzur', 'nerede'], [1900, 'theodoros', 'kimse kalktığını görmedi'], [2200, 'anon_09c', 'bakmayın']]);
       setTimeout(() => {
@@ -402,7 +417,7 @@
   if (olduOlay) kalan = -1;
   const sureYaz = (n) => `${iki(Math.floor(n / 60))}:${iki(n % 60)}`;
   function uygunMu() {
-    if (document.hidden || kok.classList.contains('esikte')) return false;
+    if (document.hidden || kok.classList.contains('esikte') || gerilim.sus) return false;
     if ($('#asli').open || $('#dosya').open || !$('#karartma').hidden || $('#perde').hidden) return false;
     const a = document.activeElement;
     if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return false;
@@ -547,7 +562,7 @@ aX1w0gf/TzV3mNq8YcRu2oEfGd5sLk1pWbH7xIuJt9aZ0vKe6MrD4yUoQf3nSgCj
       '7           | Ugarit        | Bir kere de cevap ver.    | evet   | VAR',
       '8           | Ugarit        | (fırında kaldı)           | evet   | yok',
       '412         | Mahalle       | Selamünaleyküm.           | evet   | yok',
-      '9214007111  | Grup ödevi    | Neden yazmıyorsun?        | evet   | yok'];
+      '9214007111  | Yoklama       | Burada mısın?             | evet   | yok'];
     l.slice(-5).forEach((m, i) => sat.push(`${String(9214007112 + i).padEnd(11)} | ${BEN.padEnd(13)} | ${m.slice(0, 25).padEnd(25)} | evet   | yok`));
     sat.push('', `(${(9214007113 + l.length).toLocaleString('tr-TR')} satır. Hepsi okundu. Kuyruğun adı: [2038])`);
     return sat.join('\n');
@@ -555,8 +570,8 @@ aX1w0gf/TzV3mNq8YcRu2oEfGd5sLk1pWbH7xIuJt9aZ0vKe6MrD4yUoQf3nSgCj
   const DOSYA = {
     'README.txt': () => dosyaAc('README.txt', 'okuma.\n\nbu dizin kimse için yazılmadı. buraya bağlantı veren yok.\nburaya geldiysen biri seni gönderdi. kimin gönderdiğini sorma.\n\ncevap yazma. selam verme. kendi adını yazma.\nköşeli parantez içinde gördüğün kelimeyi adres çubuğuna yazma.\n\nkurallar kat -4\'te.\n\n- op'),
     '.htpasswd': () => dosyaAc('.htpasswd', '403 Forbidden\n\nop:$apr1$0412$ZGVmdGVy\n\nParolayı zaten söyledin. Kime söylediğini sormak istemez misin?'),
-    'anne.wav': () => {
-      dosyaAc('anne.wav', '0 bayt.\n\nDosya boş. Sesi burada değil.');
+    'adin.wav': () => {
+      dosyaAc('adin.wav', '0 bayt.\n\nDosya boş. Kimse söylemedi. Yine de duydun.');
       Ses.fisilti(2.2);
     },
     'kamera/': () => dosyaAc('kamera/', '403 Forbidden\n\nBu dizinin listelenmesi kapalı.\n16 kamera var. 15\'i buraya bakıyor.\n\nAdresten girilir.'),
@@ -612,7 +627,7 @@ aX1w0gf/TzV3mNq8YcRu2oEfGd5sLk1pWbH7xIuJt9aZ0vKe6MrD4yUoQf3nSgCj
     ['.htpasswd', '31-Dec-1969 23:59', '41'],
     ['31.jpg', tarihYaz(dun), '41K'],
     ['README.txt', '01-Jan-2009 04:12', '312'],
-    ['anne.wav', tarihYaz(dun), '0'],
+    ['adin.wav', tarihYaz(dun), '0'],
     ['kamera/', tarihYaz(bugun), '-'],
     ['kanarya.txt.asc', tarihYaz(new Date(bugun.getFullYear(), bugun.getMonth(), bugun.getDate(), 4, 12)), '731'],
     ['kat-1_kayitlar/', '13-Dec-1901 20:45', '-', '#kayitlar'],
@@ -849,7 +864,7 @@ aX1w0gf/TzV3mNq8YcRu2oEfGd5sLk1pWbH7xIuJt9aZ0vKe6MrD4yUoQf3nSgCj
     const kodla = new TextDecoder('windows-1252'), bayt = new TextEncoder();
     const bozuk = (m) => kodla.decode(bayt.encode(m));
     setInterval(() => {
-      if (!girdi || document.hidden || Math.random() > 0.5) return;
+      if (!girdi || document.hidden || Math.random() > 0.5 || !O.olay()) return;
       const aday = $$('.kayit-eski,.katalog p,.emirler li:not(.kazinmis),.giris-yazi,.kehanet p:not(.sayac)').filter((e) => {
         if (e.children.length) return false;
         const r = e.getBoundingClientRect();

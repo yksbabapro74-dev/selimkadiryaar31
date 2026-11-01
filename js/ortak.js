@@ -27,6 +27,17 @@ window.Ortak = (function () {
     gelis: parseInt(depo.al('gelis'), 10) || 0,
     cevap: depo.al('cevap') || null, // 'verdi' | 'vermedi'
   };
+  // ---------- gerilim: her şey aynı anda olmaz, yaklaştıkça dünya susar ----------
+  const gerilim = { sus: false, seviye: 0, yuruyor: false };
+  let sonOlay = -1e9;
+  function olay(bosluk) {
+    if (gerilim.sus || gerilim.seviye >= 5) return false;
+    const n = performance.now();
+    if (n - sonOlay < (bosluk === undefined ? 11000 : bosluk)) return false;
+    sonOlay = n;
+    return true;
+  }
+
   function unut() {
     try {
       Object.keys(localStorage).filter((k) => k.startsWith('kadim.')).forEach((k) => localStorage.removeItem(k));
@@ -109,6 +120,20 @@ window.Ortak = (function () {
           const sirt = Math.abs(nx) < 0.15 - Math.max(0, 0.42 - ay) * 0.3 && ay > 0.42 && ay < 0.9;
           const kafa = tip === 'sandalye' && Math.hypot(nx * 1.25, ay - 0.36) < 0.085;
           if (sirt || kafa) v = 0.008;
+        } else if (tip === 'arka' || tip === 'arka-acik') {
+          // Ekranın üstünden: önde masadaki, arkada oda, odanın dibinde kapı.
+          const ax = x / W, zemin = 0.68;
+          v = Math.max(0.05, 0.58 - Math.hypot((ax - 0.5) * 1.05, (ay - 0.5) * 1.1) * 0.78);
+          if (ay > zemin) v *= 0.6 + (ay - zemin) * 0.7;
+          if (Math.abs(ay - zemin) < 0.012) v *= 0.4;
+          const k0 = 0.14, k1 = 0.31, ust = 0.17;
+          if (ax > k0 && ax < k1 && ay > ust && ay < zemin) {
+            if (tip === 'arka-acik') v = ax < k0 + 0.045 ? 0.2 : 0.006;
+            else v = v * 0.72 + (ax > k1 - 0.035 && Math.abs(ay - 0.45) < 0.025 ? 0.3 : 0.015);
+          }
+          const kenar = 0.011;
+          if ((Math.abs(ax - k0) < kenar || Math.abs(ax - k1) < kenar) && ay > ust && ay < zemin) v = Math.max(v * 1.5, 0.24);
+          if (Math.abs(ay - ust) < 0.016 && ax > k0 - kenar && ax < k1 + kenar) v = Math.max(v * 1.5, 0.24);
         } else {
           v = 0.02;
         }
@@ -341,7 +366,7 @@ window.Ortak = (function () {
   }
 
   return {
-    azalt, RENK, CSS_RENK, BAYER, depo, kayit, unut, kimlik, dinle, yay, javaHash,
+    azalt, RENK, CSS_RENK, BAYER, depo, kayit, unut, kimlik, dinle, yay, javaHash, gerilim, olay,
     portreResmi, griOrnekle, atkinson, dikisResmi, kalem, muhur, onion, misafir, kameraHarita, kameraCiz, oluSayfa,
   };
 })();

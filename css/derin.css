@@ -71,7 +71,7 @@ input:disabled{background:#6a6a6a;color:#2e2e2e}
 html.esikte #alt-serit,html.esikte #oturum-sayac{display:none}
 #oturum-sayac{position:fixed;left:50%;transform:translateX(-50%);bottom:3px;z-index:40;margin:0;font:400 11.5px/1.2 var(--ekran);color:#8c8c8c;white-space:nowrap;background:#000;padding:1px 4px;pointer-events:none}
 #oturum-sayac.gecti{color:var(--kor)}
-@media (max-width:440px){#oturum-sayac{left:auto;right:74px;transform:none}#o-durum{max-width:42vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
+@media (max-width:440px){#oturum-sayac{left:auto;right:96px;transform:none}#o-durum{max-width:42vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
 
 /* ---------- başlık ---------- */
 .giris{height:auto;min-height:0;overflow:visible;cursor:auto;user-select:auto;-webkit-user-select:auto;touch-action:auto;padding:0 var(--yan) 10px;max-width:1120px;margin:0 auto}
@@ -361,3 +361,34 @@ html.giriste #alt-oda{display:none}
 }
 .dugme{white-space:nowrap}
 @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea{font-size:16px!important}}
+
+/* ---------- CAM 16: köşede, küçük, hep açık ---------- */
+#cam16{position:fixed;right:var(--yan);bottom:56px;z-index:41;width:176px;border:1px solid #4a4a4a;background:#000;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+#cam16[hidden],#cam16-ac[hidden],#yakin[hidden]{display:none}
+#cam16-goz{display:block;outline-offset:-2px}
+#cam16 canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+#cam16::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px)}
+.c16-osd{position:absolute;left:4px;top:3px;margin:0;font:400 10.5px/1.2 var(--ekran);color:#ddd;text-shadow:1px 1px 0 #000;pointer-events:none}
+#cam16-kapat{all:unset;position:absolute;right:0;top:0;z-index:1;box-sizing:border-box;width:26px;height:26px;text-align:center;font:400 13px/26px var(--ekran);color:#8c8c8c;cursor:pointer}
+#cam16-kapat:hover{color:var(--kor)}
+#cam16-kapat:focus-visible{outline:1px dotted #fff;outline-offset:-3px}
+#cam16-ac{all:unset;position:fixed;right:var(--yan);bottom:56px;z-index:41;font:400 11.5px/1.4 var(--ekran);color:var(--kor);background:#000;padding:2px 4px;cursor:pointer}
+#cam16-ac:focus-visible{outline:1px dotted #fff}
+html.esikte #cam16,html.esikte #cam16-ac,html.giriste #cam16:not(.geldi),html.giriste #cam16-ac,html.c16-yazi #cam16:not(.geldi),html.c16-oyun #cam16:not(.geldi),html.c16-oyun #cam16-ac{display:none}
+html.c16 body{padding-bottom:210px}
+#cam16.geldi{z-index:62;pointer-events:none;transform-origin:center}
+#cam16.geldi #cam16-kapat{display:none}
+#yakin{position:fixed;inset:0;z-index:60;background:#000;opacity:0;pointer-events:none;transition:opacity 6.2s linear}
+#yakin.acik{opacity:.95}
+#yakin.opak{opacity:1;transition:none}
+#yakin-yazi{position:absolute;left:0;right:0;bottom:calc(66px + 3vh);margin:0;text-align:center;font:400 15px/1.2 var(--ekran);color:var(--kor);z-index:63}
+#c16-yuz{position:fixed;inset:0;width:100%;height:100%;z-index:95;image-rendering:pixelated;background:#000}
+@media (max-width:560px){
+  #cam16{width:112px;bottom:52px}
+  #cam16-ac{bottom:52px}
+  .c16-osd{font-size:9px;left:3px;top:2px}
+  html.c16 #fisilti{bottom:144px}
+  html.c16 body{padding-bottom:160px}
+}
+@media (min-width:561px) and (max-width:700px){html.c16 #fisilti{bottom:194px}}
+@media (prefers-reduced-motion:reduce){#yakin{transition:none}}

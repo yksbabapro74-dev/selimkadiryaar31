@@ -2,3 +2,5 @@
 tools/gizli_kaynak/
 GIZLI.md
 __pycache__/
+# Orijinal fotoğraflar yayına gitmez; site yalnızca assets/suret kullanır.
+images/

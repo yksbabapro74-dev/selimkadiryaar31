@@ -2,7 +2,7 @@
 // Uğultu, taş odada koro, çan, uzaktan klavye tıkırtısı, fısıltı, kalp, çığlık.
 window.Ses = (function () {
   'use strict';
-  const { depo, yay } = window.Ortak;
+  const { depo, yay, gerilim } = window.Ortak;
   const AC = window.AudioContext || window.webkitAudioContext;
 
   function gurultu(c, sn, kahve) {
@@ -52,6 +52,8 @@ window.Ses = (function () {
   // o zaman ne fısıltı duyulur ne tıkırtı, çığlık da uğultudan farksız kalır.
   const ORTAM_SES = 0.13;
   const CIGLIK_SES = 0.8;
+  // Arkandaki soluk. Sessizlikte duyulur; bağırmaz.
+  const NEFES_SES = 0.32;
 
   function Motor(c) {
     const g = (v) => { const k = c.createGain(); k.gain.value = v; return k; };
@@ -78,6 +80,31 @@ window.Ses = (function () {
     // Çığlık sessizliği deler: ana kazancı atlar.
     const delen = g(CIGLIK_SES);
     delen.connect(sinir);
+    // Yakın yol: arkadan gelenler ortam kısılınca kısılmaz. Asıl o zaman duyulur.
+    const yakin = g(0);
+    yakin.connect(sinir);
+    const nefesYol = g(1);
+    nefesYol.connect(yakin);
+
+    const konum = (p, x, y, z, t) => {
+      if (p.positionX) {
+        p.positionX.setValueAtTime(x, t);
+        p.positionY.setValueAtTime(y, t);
+        p.positionZ.setValueAtTime(z, t);
+      } else p.setPosition(x, y, z);
+    };
+    // Dinleyen -z'ye bakar: +z tam arkası, +x sağ omzu. Kulaklıkla anlaşılır.
+    function uzayda(x, y, z, t) {
+      const p = c.createPanner();
+      p.panningModel = 'HRTF';
+      p.distanceModel = 'inverse';
+      p.refDistance = 0.45;
+      p.rolloffFactor = 1;
+      konum(p, x, y, z, t === undefined ? c.currentTime : t);
+      return p;
+    }
+    // HRTF verisi ilk kullanımda arkadan yüklenir; o ana kalmasın.
+    uzayda(0, 0, 1);
 
     const beyaz = gurultu(c, 3, false), kahve = gurultu(c, 4, true);
     const kaynaklar = [];
@@ -194,10 +221,143 @@ window.Ses = (function () {
         const b = t === undefined ? simdi() : t;
         ana.gain.cancelScheduledValues(b);
         ana.gain.setTargetAtTime(ANA_SES, b, 0.12);
+        yakin.gain.cancelScheduledValues(b);
+        yakin.gain.setTargetAtTime(1, b, 0.05);
       },
       kapat() {
         ana.gain.cancelScheduledValues(simdi());
         ana.gain.setTargetAtTime(0, simdi(), 0.05);
+        yakin.gain.cancelScheduledValues(simdi());
+        yakin.gain.setTargetAtTime(0, simdi(), 0.02);
+      },
+      // Yaklaştıkça oda susar.
+      ortamKis(p, t) {
+        const b = t === undefined ? simdi() : t;
+        ortam.gain.setTargetAtTime(ORTAM_SES * p, b, 2.5);
+        ortamYanki.gain.setTargetAtTime(ORTAM_SES * p, b, 2.5);
+      },
+      // Bir adım: topuk, sonra taban. Uzaktaysa odada yankılanır, yakındaysa kuru.
+      adim(x, z, ses, t) {
+        const b = t === undefined ? simdi() : t;
+        const p = uzayda(x, -0.9, z, b);
+        // Uzaktan da duyulsun: uğultunun altında kalmaz.
+        p.refDistance = 1.5;
+        p.connect(yakin);
+        const yank = g(Math.min(0.5, Math.hypot(x, z) * 0.11));
+        p.connect(yank);
+        yank.connect(konv);
+        const o = c.createOscillator();
+        o.frequency.setValueAtTime(105, b);
+        o.frequency.exponentialRampToValueAtTime(46, b + 0.1);
+        const e = c.createGain();
+        e.gain.setValueAtTime(0, b);
+        e.gain.linearRampToValueAtTime(ses, b + 0.008);
+        e.gain.exponentialRampToValueAtTime(0.0001, b + 0.17);
+        o.connect(e);
+        e.connect(p);
+        o.start(b);
+        o.stop(b + 0.2);
+        const s = c.createBufferSource();
+        s.buffer = beyaz;
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 520 + Math.random() * 420;
+        bp.Q.value = 0.9;
+        const e2 = c.createGain();
+        e2.gain.setValueAtTime(0, b + 0.02);
+        e2.gain.linearRampToValueAtTime(ses * 0.5, b + 0.045);
+        e2.gain.exponentialRampToValueAtTime(0.0001, b + 0.16);
+        s.connect(bp);
+        bp.connect(e2);
+        e2.connect(p);
+        s.start(b + 0.02, Math.random() * 2.5, 0.16);
+      },
+      // Üç, sonra bir. 11111'in içi değil ama kapıda böyle duyulur.
+      kapiVur(x, z, t) {
+        const b = t === undefined ? simdi() : t;
+        const p = uzayda(x, 0, z, b);
+        p.refDistance = 1.5;
+        p.connect(yakin);
+        const yank = g(0.45);
+        p.connect(yank);
+        yank.connect(konv);
+        [0, 0.31, 0.62, 1.55].forEach((d) => {
+          const o = c.createOscillator();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(190, b + d);
+          o.frequency.exponentialRampToValueAtTime(118, b + d + 0.07);
+          const e = c.createGain();
+          e.gain.setValueAtTime(0, b + d);
+          e.gain.linearRampToValueAtTime(0.38, b + d + 0.004);
+          e.gain.exponentialRampToValueAtTime(0.0001, b + d + 0.11);
+          o.connect(e);
+          e.connect(p);
+          o.start(b + d);
+          o.stop(b + d + 0.13);
+          const s = c.createBufferSource();
+          s.buffer = beyaz;
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = 880;
+          bp.Q.value = 1.2;
+          const e2 = c.createGain();
+          e2.gain.setValueAtTime(0.25, b + d);
+          e2.gain.exponentialRampToValueAtTime(0.0001, b + d + 0.05);
+          s.connect(bp);
+          bp.connect(e2);
+          e2.connect(p);
+          s.start(b + d, Math.random() * 2.5, 0.06);
+        });
+      },
+      // Bir soluk: içeri, sonra dışarı. Sesi yok, yalnızca hava.
+      nefes(x0, z0, x1, z1, ses, t) {
+        const b = t === undefined ? simdi() : t;
+        const p = uzayda(x0, 0.05, z0, b);
+        if (p.positionX) {
+          p.positionX.linearRampToValueAtTime(x1, b + 2.8);
+          p.positionZ.linearRampToValueAtTime(z1, b + 2.8);
+        }
+        p.connect(nefesYol);
+        const s = c.createBufferSource();
+        s.buffer = beyaz;
+        s.loop = true;
+        const hp = c.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 260;
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.Q.value = 0.8;
+        bp.frequency.setValueAtTime(1900, b);
+        bp.frequency.setValueAtTime(1150, b + 1.1);
+        bp.frequency.exponentialRampToValueAtTime(560, b + 2.8);
+        const e = c.createGain();
+        e.gain.setValueAtTime(0.0001, b);
+        e.gain.linearRampToValueAtTime(ses * 0.55, b + 0.4);
+        e.gain.linearRampToValueAtTime(ses * 0.4, b + 0.95);
+        e.gain.linearRampToValueAtTime(0.0002, b + 1.1);
+        e.gain.linearRampToValueAtTime(ses, b + 1.5);
+        e.gain.exponentialRampToValueAtTime(0.0002, b + 2.8);
+        s.connect(hp);
+        hp.connect(bp);
+        bp.connect(e);
+        e.connect(p);
+        s.start(b, Math.random() * 2);
+        s.stop(b + 2.9);
+      },
+      // Sol omuzdan sağ omza geçer, her solukta biraz daha yakın.
+      nefesle(adet, t) {
+        const b = t === undefined ? simdi() : t;
+        nefesYol.gain.cancelScheduledValues(b);
+        nefesYol.gain.setValueAtTime(1, b);
+        const n = Math.max(1, adet);
+        for (let i = 0; i < n; i++) {
+          const u0 = i / n, u1 = (i + 1) / n;
+          this.nefes(-0.46 + 0.76 * u0, 0.44 - 0.2 * u0, -0.46 + 0.76 * u1, 0.44 - 0.2 * u1, NEFES_SES, b + i * 3.5);
+        }
+      },
+      nefesKes() {
+        nefesYol.gain.cancelScheduledValues(simdi());
+        nefesYol.gain.setTargetAtTime(0, simdi(), 0.015);
       },
       yukselt(p, t) {
         const b = t === undefined ? simdi() : t;
@@ -412,7 +572,7 @@ window.Ses = (function () {
     ['pointermove', 'keydown', 'wheel', 'touchstart'].forEach((o) => addEventListener(o, hareket, { passive: true }));
     (function tikDongu() {
       setTimeout(() => {
-        if (acik && !document.hidden && performance.now() - sonHareket > 1400) {
+        if (acik && !document.hidden && !gerilim.sus && performance.now() - sonHareket > 1400) {
           const sure = motor.tikirti(8 + Math.floor(Math.random() * 26), Math.random() * 1.2 - 0.6);
           tikBitis = c.currentTime + sure;
         }
@@ -421,12 +581,12 @@ window.Ses = (function () {
     })();
     (function fisDongu() {
       setTimeout(() => {
-        if (acik && !document.hidden && derin > 0.15) motor.fisilti(Math.random() * 1.6 - 0.8, 1.6 + Math.random() * 1.8);
+        if (acik && !document.hidden && !gerilim.sus && gerilim.seviye < 5 && derin > 0.15) motor.fisilti(Math.random() * 1.6 - 0.8, 1.6 + Math.random() * 1.8);
         fisDongu();
       }, 19000 + Math.random() * 26000);
     })();
     setInterval(() => {
-      if (acik && !document.hidden) motor.can(87.31, 11, 0.2 + derin * 0.16);
+      if (acik && !document.hidden && !gerilim.sus && gerilim.seviye < 5) motor.can(87.31, 11, 0.2 + derin * 0.16);
     }, 31000);
     document.addEventListener('visibilitychange', () => {
       if (!c) return;
@@ -497,6 +657,18 @@ window.Ses = (function () {
         speechSynthesis.speak(u);
       } catch (e) { /* konuşamıyorsa susar */ }
     },
+    // Arkadan gelenler. Sesi açana ve kulaklık takana.
+    adimlar: canli((x, z, ses, adet) => {
+      const n = adet || 3, t = c.currentTime;
+      for (let i = 0; i < n; i++) {
+        const k = 1 + (n - 1 - i) * 0.09;
+        motor.adim(x * k, z * k, ses, t + i * (0.58 + Math.random() * 0.1));
+      }
+    }),
+    kapiVur: canli((x, z) => motor.kapiVur(x, z)),
+    nefesle: canli((adet) => motor.nefesle(adet)),
+    nefesKes: canli(() => motor.nefesKes()),
+    ortamKis: canli((p) => motor.ortamKis(p)),
     sus: canli((sn) => motor.sus(sn || 0.05)),
     don: canli((sn) => motor.don(sn || 2)),
     // Çevrimdışı ölçüm için

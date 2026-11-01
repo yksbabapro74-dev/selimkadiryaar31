@@ -36,7 +36,7 @@
     },
     {
       ad: '1683 · OSMANLI', bas: 16,
-      laf: ['Evladım.', 'Kimlerdensin?', 'Annen seni çağırıyor.', 'Geç oldu, gel.', 'Selam yok mu?'],
+      laf: ['Evladım.', 'Kimlerdensin?', 'Seni çağırıyorlar.', 'Geç oldu, gel.', 'Selam yok mu?'],
     },
     {
       ad: 'BUGÜN · KAMPÜS', bas: 24,
@@ -45,7 +45,7 @@
   ];
   const KAYIP = [
     'Arkanı döndün. Tanıdın. Keşke tanımasaydın.',
-    'Annenin sesiydi. Annen evde.',
+    'Yan odadan seslendi. Evde yan oda yok.',
     '«Efendim?» dedin. Yalnızca bu kadar.',
     'Kimlerden olduğunu söyledin. Artık onlar da biliyor.',
   ];
